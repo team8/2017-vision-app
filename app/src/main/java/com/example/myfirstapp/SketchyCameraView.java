@@ -13,8 +13,9 @@ public class SketchyCameraView extends JavaCameraView {
     }
 
     public void toggleFlashLight() {
+        if (mCamera == null) return;
         Camera.Parameters param = mCamera.getParameters();
-        param.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+        param.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
         mCamera.setParameters(param);
     }
 

@@ -25,11 +25,14 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
+import org.opencv.core.Point3;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
@@ -39,17 +42,28 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "MainActivity";
 
-    private static MatOfDouble intrinsicMatrix;
+    private static Mat intrinsicMatrix;
+
+    private static final double focalLength = 620, x0 = 960, y0 = 540;
 
     // Samsung Galaxy S4
-    private static final double[] intrinsics = {3956.81689,             0,   2383.97949,
-                                                         0,    3891.87826,   1205.53979,
-                                                         0,             0,            1};
+    private static final double[][] intrinsics = {{focalLength,             0,   x0},
+            {0,    focalLength,   y0},
+            {0,             0,            1}};
+
+    private static double x = 0, y = 0, z = Math.PI/2;
+
+    private static double[][] xArr = {{1, 0, 0}, {0, Math.cos(x), -Math.sin(x)}, {0, Math.sin(x), Math.cos(x)}},
+            yArr = {{Math.cos(y), 0, Math.sin(y)}, {0, 1, 0}, {-Math.sin(y), 0, Math.cos(y)}},
+            zArr = {{Math.cos(z), -Math.sin(z), 0}, {Math.sin(z), Math.cos(z), 0}, {0, 0, 1}};
+
+    private static Mat xMat, yMat, zMat;
 
     private static Mat inputHSV;
 
@@ -64,11 +78,18 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV load success");
                     inputHSV = new Mat();
+                    xMat = new Mat(3, 3, CvType.CV_64F);
+                    yMat = new Mat(3, 3, CvType.CV_64F);
+                    zMat = new Mat(3, 3, CvType.CV_64F);
                     mCameraView.enableView();
                     mCameraView.toggleFlashLight();
 
-                    intrinsicMatrix = new MatOfDouble(intrinsics);
-                    intrinsicMatrix.reshape(3, 3);
+                    intrinsicMatrix = new Mat(3, 3, CvType.CV_64F);
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            intrinsicMatrix.put(i, j, intrinsics[i][j]);
+                        }
+                    }
                 } break;
                 default: {
                     super.onManagerConnected(status);
@@ -183,9 +204,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             for (int i = 0; i < 4; i++) {
                 Imgproc.circle(input, corners[i], 15, colors[i], -1);
             }
-            double yaw = getAngle(corners);
+            double[] yaw = getAnglePnP(corners, input);
 
-            Imgproc.putText(input, String.format("%.2f", yaw), new Point(0, 700), Core.FONT_HERSHEY_SIMPLEX, 3, new Scalar(0, 255, 0), 3);
+            if (yaw != null) Imgproc.putText(input,
+                    String.format(Locale.getDefault(), "%.2f %.2f %.2f %.2f",
+                    yaw[0], yaw[1], yaw[2], yaw[3]), new Point(0, 700),
+                    Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
         Imgproc.drawContours(input, largestTwo, -1, new Scalar(0, 255, 0), 2);
@@ -238,7 +262,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return corners;
     }
 
-    public double getAngle(Point[] src) {
+    public double[] getAngle(Point[] src) {
         Point[] dst = {new Point(0, 5), new Point (10.25, 5),
                         new Point(0, 0), new Point (10.25, 0)};
         MatOfPoint2f srcPoints = new MatOfPoint2f(), dstPoints = new MatOfPoint2f();
@@ -246,34 +270,77 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         dstPoints.fromArray(dst);
         Mat homography = Calib3d.findHomography(srcPoints, dstPoints);
         List<Mat> rvecs = new ArrayList<>(), tvecs = new ArrayList<>(), normals = new ArrayList<>();
+        if (!homography.isContinuous()) return null;
+        Log.d(TAG, intrinsicMatrix.size().toString());
         Calib3d.decomposeHomographyMat(homography, intrinsicMatrix, rvecs, tvecs, normals);
         double[] angles = new double[4];
         for (int i = 0; i < 4; i++) {
-            angles[i] = getYaw(rvecs.get(0));
+            angles[i] = getYaw(rvecs.get(i));
         }
         Log.d(TAG, Arrays.toString(angles));
-        return angles[0];
+        return angles;
     }
+
+    public double[] getAnglePnP(Point[] src, Mat input) {
+        MatOfPoint2f srcPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
+        MatOfPoint3f dstPoints = new MatOfPoint3f(new Point3(0, 5, 0), new Point3(10.25, 5, 0),
+                new Point3(0, 0, 0), new Point3(10.25, 0, 0));
+        Mat rvecs = new Mat(3, 3, CvType.CV_64F), tvecs = new Mat(3, 1, CvType.CV_64F);
+        Calib3d.solvePnP(dstPoints, srcPoints, intrinsicMatrix, new MatOfDouble(Mat.zeros(4, 1, CvType.CV_64F)), rvecs, tvecs);
+        Log.d(TAG, rvecs.size().toString());
+        double[] angles = new double[4];
+        if (rvecs == null) return null;
+        Log.d(TAG, Arrays.toString(rvecs.get(0, 0)));
+        double previous = 0;
+        for (int i = 0; i < 3; i++) {
+            if (rvecs.get(0, i) != null) {
+                angles[i] = Math.toDegrees(rvecs.get(0, i)[0]);
+                previous = angles[i];
+            } else {
+                angles[i] = previous;
+            }
+
+        }
+        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(3, 0, 0), new Point3(0, 3, 0), new Point3(0, 0, 3));
+        MatOfPoint2f result = new MatOfPoint2f();
+        //Log.d(TAG, Integer.toString(tvecs.rows()));
+        Log.d(TAG, String.format("%.2f %.2f %.2f", tvecs.get(0, 0)[0], tvecs.get(1, 0)[0], tvecs.get(2, 0)[0]));
+        Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, new MatOfDouble(0,0,0,0), result);
+        Point[] arr = result.toArray();
+        for (int i = 1; i < 4; i++) {
+            Imgproc.line(input, arr[0], arr[i], new Scalar(0, 0, 255), 3);
+        }
+
+        return angles;
+    }
+
 
     public double getYaw(Mat rotationMatrix) {
-        double x, y, z;
-
-        double[][] arr = new double[3][3];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                arr[i][j] = rotationMatrix.get(i, j)[0];
-            }
-        }
-        double sy = Math.sqrt(arr[0][0] * arr[0][0] + arr[1][0] * arr[1][0]);
-        boolean singular = sy < 1e-6;
-
-        double retval;
-        if (!singular) {
-            retval = Math.atan2(arr[1][0], arr[0][0]);
-        } else retval = 0;
-        return Math.toDegrees(retval);
+        double theta1, theta2, theta3, s1, c1, c2;
+        theta1 = Math.atan2(rotationMatrix.get(1,2)[0], rotationMatrix.get(2,2)[0]);
+        c2 = Math.sqrt(rotationMatrix.get(0,0)[0] * rotationMatrix.get(0,0)[0] + rotationMatrix.get(0,1)[0] * rotationMatrix.get(0,1)[0]);
+        theta2 = Math.atan2(-rotationMatrix.get(0,2)[0], c2);
+        s1 = Math.sin(theta1);
+        c1 = Math.cos(theta1);
+        theta3 = Math.atan2(s1 * rotationMatrix.get(2,0)[0] - c2 * rotationMatrix.get(1,0)[0], c1 * rotationMatrix.get(1,1)[0] - s1 * rotationMatrix.get(2,1)[0]);
+        return Math.toDegrees(theta1);
     }
 
+/*    public void verifyYaw() {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                xMat.put(i, j, xArr[i][j]);
+                yMat.put(i, j, yArr[i][j]);
+                zMat.put(i, j, zArr[i][j]);
+            }
+        }
+        Mat rotMatrix = new Mat(3, 3, CvType.CV_64F), temp = new Mat(3, 3, CvType.CV_64F);
+        Log.d(TAG, String.format(Locale.getDefault(), "%s\n%s\n%s", zMat.get(0, 0, new double[0]), yMat, xMat));
+        Core.multiply(zMat, yMat, temp);
+        Core.multiply(temp, xMat, rotMatrix);
+        Log.d(TAG, rotMatrix.toString());
+        if (z != getYaw(rotMatrix)) Log.d(TAG, "You failed");
+    }*/
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {

@@ -1,7 +1,5 @@
 package com.example.myfirstapp;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -9,18 +7,14 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.Size;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.View;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.calib3d.Calib3d;
@@ -33,7 +27,6 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
-import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
@@ -50,20 +43,19 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private static Mat intrinsicMatrix;
 
-    private static final double focalLength = 620, x0 = 960, y0 = 540;
+    private static MatOfDouble distCoeffs;
+
+    private static final double fx = 3000, fy = 4000, x0 = 960, y0 = 540;
 
     // Samsung Galaxy S4
-    private static final double[][] intrinsics = {{focalLength,             0,   x0},
-            {0,    focalLength,   y0},
-            {0,             0,            1}};
+    /*private static final double[][] intrinsics = {{4095.98101,             0,   0},
+            {0,    4088.72922,   0},
+            {0,             0,            1}};*/
+    private static final double[][] intrinsics = {{fx, 0, 0},
+            {0, fy, 0},
+            {0, 0, 1}};
 
     private static double x = 0, y = 0, z = Math.PI/2;
-
-    private static double[][] xArr = {{1, 0, 0}, {0, Math.cos(x), -Math.sin(x)}, {0, Math.sin(x), Math.cos(x)}},
-            yArr = {{Math.cos(y), 0, Math.sin(y)}, {0, 1, 0}, {-Math.sin(y), 0, Math.cos(y)}},
-            zArr = {{Math.cos(z), -Math.sin(z), 0}, {Math.sin(z), Math.cos(z), 0}, {0, 0, 1}};
-
-    private static Mat xMat, yMat, zMat;
 
     private static Mat inputHSV;
 
@@ -78,9 +70,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV load success");
                     inputHSV = new Mat();
-                    xMat = new Mat(3, 3, CvType.CV_64F);
-                    yMat = new Mat(3, 3, CvType.CV_64F);
-                    zMat = new Mat(3, 3, CvType.CV_64F);
                     mCameraView.enableView();
                     mCameraView.toggleFlashLight();
 
@@ -90,6 +79,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                             intrinsicMatrix.put(i, j, intrinsics[i][j]);
                         }
                     }
+                    //distCoeffs = new MatOfDouble(0.41013276, -2.79613191, -0.02306075, 0.00832102, 4.43203584);
+                    distCoeffs = new MatOfDouble(0, 0, 0, 0);
                 } break;
                 default: {
                     super.onManagerConnected(status);
@@ -201,14 +192,16 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                     new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
 
+            //corners = new Point[] {new Point(250, 750), new Point(1275, 750), new Point(250, 250), new Point(1275, 250)};
+
             for (int i = 0; i < 4; i++) {
                 Imgproc.circle(input, corners[i], 15, colors[i], -1);
             }
             double[] yaw = getAnglePnP(corners, input);
 
             if (yaw != null) Imgproc.putText(input,
-                    String.format(Locale.getDefault(), "%.2f %.2f %.2f %.2f",
-                    yaw[0], yaw[1], yaw[2], yaw[3]), new Point(0, 700),
+                    String.format(Locale.getDefault(), "%.2f %.2f %.2f",
+                    yaw[0], yaw[1], yaw[2]), new Point(0, 700),
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
@@ -282,35 +275,33 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public double[] getAnglePnP(Point[] src, Mat input) {
+        //src = new Point[]{new Point(0, 5), new Point(10.25, 5), new Point(0, 0), new Point(10.25, 0)};
+        Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
+                new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
+        for (int i = 0; i < 4; i++) {
+            Imgproc.circle(input, src[i], 15, colors[i], -1);
+        }
         MatOfPoint2f srcPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
         MatOfPoint3f dstPoints = new MatOfPoint3f(new Point3(0, 5, 0), new Point3(10.25, 5, 0),
                 new Point3(0, 0, 0), new Point3(10.25, 0, 0));
-        Mat rvecs = new Mat(3, 3, CvType.CV_64F), tvecs = new Mat(3, 1, CvType.CV_64F);
-        Calib3d.solvePnP(dstPoints, srcPoints, intrinsicMatrix, new MatOfDouble(Mat.zeros(4, 1, CvType.CV_64F)), rvecs, tvecs);
-        Log.d(TAG, rvecs.size().toString());
-        double[] angles = new double[4];
-        if (rvecs == null) return null;
-        Log.d(TAG, Arrays.toString(rvecs.get(0, 0)));
-        double previous = 0;
-        for (int i = 0; i < 3; i++) {
-            if (rvecs.get(0, i) != null) {
-                angles[i] = Math.toDegrees(rvecs.get(0, i)[0]);
-                previous = angles[i];
-            } else {
-                angles[i] = previous;
-            }
-
-        }
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(3, 0, 0), new Point3(0, 3, 0), new Point3(0, 0, 3));
+        MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
+        Calib3d.solvePnP(dstPoints, srcPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
+        double[] angles = rvecs.toArray();
+        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(10.25, 0, 0), new Point3(10.25, 5, 0), new Point3(0, 5, 0),
+                                                    new Point3(0, 0, -5), new Point3(10.25, 0, -5), new Point3(10.25, 5, -5), new Point3(0, 5, -5));
         MatOfPoint2f result = new MatOfPoint2f();
-        //Log.d(TAG, Integer.toString(tvecs.rows()));
-        Log.d(TAG, String.format("%.2f %.2f %.2f", tvecs.get(0, 0)[0], tvecs.get(1, 0)[0], tvecs.get(2, 0)[0]));
-        Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, new MatOfDouble(0,0,0,0), result);
+        rvecs.put(0, 1, 0);
+        Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
         Point[] arr = result.toArray();
-        for (int i = 1; i < 4; i++) {
-            Imgproc.line(input, arr[0], arr[i], new Scalar(0, 0, 255), 3);
+        Scalar red = new Scalar(255, 0, 0);
+        for (int i = 0; i < 4; i++) {
+            Imgproc.line(input, arr[i], arr[(i+1) % 4], red, 5);
+            Imgproc.line(input, arr[i], arr[i+4], red, 5);
+            Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5);
         }
-
+        for (int i = 0; i < 3; i++) {
+            angles[i] = Math.toDegrees(angles[i]);
+        }
         return angles;
     }
 

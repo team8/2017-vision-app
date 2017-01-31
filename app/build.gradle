@@ -10,6 +10,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        compileOptions.encoding = "UTF-8"
     }
     buildTypes {
         release {

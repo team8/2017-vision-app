@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private static MatOfDouble distCoeffs;
 
-    private static final double fx = 3000, fy = 4000, x0 = 960, y0 = 540;
+    private static final double fx = 6513.75410, fy = 6448.76817, x0 = 960, y0 = 540;
 
     // Samsung Galaxy S4
     /*private static final double[][] intrinsics = {{4095.98101,             0,   0},
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                             intrinsicMatrix.put(i, j, intrinsics[i][j]);
                         }
                     }
-                    //distCoeffs = new MatOfDouble(0.41013276, -2.79613191, -0.02306075, 0.00832102, 4.43203584);
+                    //distCoeffs = new MatOfDouble(.462497044, -1.63724827, -.00256097258, .00220231323);
                     distCoeffs = new MatOfDouble(0, 0, 0, 0);
                 } break;
                 default: {
@@ -275,20 +275,20 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public double[] getAnglePnP(Point[] src, Mat input) {
-        //src = new Point[]{new Point(0, 5), new Point(10.25, 5), new Point(0, 0), new Point(10.25, 0)};
+        //src = new Point[]{new Point(0, 500), new Point(1025, 500), new Point(0, 0), new Point(1025, 0)};
         Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                 new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
         for (int i = 0; i < 4; i++) {
             Imgproc.circle(input, src[i], 15, colors[i], -1);
         }
         MatOfPoint2f srcPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
-        MatOfPoint3f dstPoints = new MatOfPoint3f(new Point3(0, 5, 0), new Point3(10.25, 5, 0),
-                new Point3(0, 0, 0), new Point3(10.25, 0, 0));
+        MatOfPoint3f dstPoints = new MatOfPoint3f(new Point3(0, 500, 0), new Point3(1025, 500, 0),
+                new Point3(0, 0, 0), new Point3(1025, 0, 0));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
         Calib3d.solvePnP(dstPoints, srcPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
         double[] angles = rvecs.toArray();
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(10.25, 0, 0), new Point3(10.25, 5, 0), new Point3(0, 5, 0),
-                                                    new Point3(0, 0, -5), new Point3(10.25, 0, -5), new Point3(10.25, 5, -5), new Point3(0, 5, -5));
+        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(1025, 0, 0), new Point3(1025, 500, 0), new Point3(0, 500, 0),
+                                                    new Point3(0, 0, -500), new Point3(1025, 0, -500), new Point3(1025, 500, -500), new Point3(0, 500, -500));
         MatOfPoint2f result = new MatOfPoint2f();
         rvecs.put(0, 1, 0);
         Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);

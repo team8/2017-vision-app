@@ -175,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 return 0;
             }
         });
-        List<MatOfPoint> largestTwo = new ArrayList<>();
+        /*List<MatOfPoint> largestTwo = new ArrayList<>();
         largestTwo.add(contours.get(0));
         if (contours.size() > 1) largestTwo.add(contours.get(1));
 
@@ -184,11 +184,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if (largestTwo.size() == 2) {
             MatOfPoint first = largestTwo.get(0), second = largestTwo.get(1);
             combined = concat(first, second);
-        }
+        }*/
 
         //Track corners of combined contour
         Point[] corners;
-        if ((corners = getCorners(combined)) != null) {
+        if ((corners = getCorners(contours.get(0))) != null) {
             Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                     new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
 
@@ -205,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
-        Imgproc.drawContours(input, largestTwo, -1, new Scalar(0, 255, 0), 2);
+        Imgproc.drawContours(input, contours, 0, new Scalar(0, 255, 0), 2);
         return input;
     }
 
@@ -275,36 +275,39 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public double[] getAnglePnP(Point[] src, Mat input) {
+        int scalar = 100, x = 2 * scalar, y = 5 * scalar, z = -2 * scalar;
+
         //src = new Point[]{new Point(0, 500), new Point(1025, 500), new Point(0, 0), new Point(1025, 0)};
         Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                 new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
-        for (int i = 0; i < 4; i++) {
-            Imgproc.circle(input, src[i], 15, colors[i], -1);
-        }
-        MatOfPoint2f srcPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
-        MatOfPoint3f dstPoints = new MatOfPoint3f(new Point3(0, 500, 0), new Point3(1025, 500, 0),
-                new Point3(0, 0, 0), new Point3(1025, 0, 0));
+        MatOfPoint2f dstPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
+        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(0, y, 0), new Point3(x, y, 0),
+                new Point3(0, 0, 0), new Point3(x, 0, 0));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
-        Calib3d.solvePnP(dstPoints, srcPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
-        double[] angles = rvecs.toArray();
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(1025, 0, 0), new Point3(1025, 500, 0), new Point3(0, 500, 0),
-                                                    new Point3(0, 0, -500), new Point3(1025, 0, -500), new Point3(1025, 500, -500), new Point3(0, 500, -500));
+        Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
+        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(x, 0, 0), new Point3(x, y, 0), new Point3(0, y, 0),
+                                                    new Point3(0, 0, z), new Point3(x, 0, z), new Point3(x, y, z), new Point3(0, y, z));
         MatOfPoint2f result = new MatOfPoint2f();
-        rvecs.put(0, 1, 0);
-        Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
+        /*Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
         Point[] arr = result.toArray();
         Scalar red = new Scalar(255, 0, 0);
         for (int i = 0; i < 4; i++) {
             Imgproc.line(input, arr[i], arr[(i+1) % 4], red, 5);
             Imgproc.line(input, arr[i], arr[i+4], red, 5);
             Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5);
-        }
+        }*/
+        Point3[] newSrc = new Point3[4];
+        for (int i = 0; i < 4; i++) newSrc[i] = new Point3(src[i].x, src[i].y, 0);
+        srcPoints = new MatOfPoint3f();
+        srcPoints.fromArray(newSrc);
+        dstPoints = new MatOfPoint2f(new Point(0, y), new Point(x, y), new Point(0, 0), new Point(x, 0));
+        Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
+        double[] angles = rvecs.toArray();
         for (int i = 0; i < 3; i++) {
             angles[i] = Math.toDegrees(angles[i]);
         }
         return angles;
     }
-
 
     public double getYaw(Mat rotationMatrix) {
         double theta1, theta2, theta3, s1, c1, c2;

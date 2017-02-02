@@ -15,8 +15,6 @@ public class SetThresholdActivity extends AppCompatActivity implements SeekBar.O
 
     private SharedPreferences preferences;
 
-    private final String TAG = "SetThresholdActivity";
-
     private SeekBar hLow, sLow, vLow, hHigh, sHigh, vHigh;
 
     private TextView hLowInfo, sLowInfo, vLowInfo, hHighInfo, sHighInfo, vHighInfo;
@@ -76,7 +74,6 @@ public class SetThresholdActivity extends AppCompatActivity implements SeekBar.O
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         SharedPreferences.Editor editor = preferences.edit();
-        Log.d(TAG, Integer.toString(seekBar.getId()));
 
         switch(seekBar.getId()) {
 
@@ -106,7 +103,7 @@ public class SetThresholdActivity extends AppCompatActivity implements SeekBar.O
                 break;
         }
 
-        editor.commit();
+        editor.apply();
     }
 
     @Override

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">My First App</string>
+    <string name="app_name">Team 8 Vision</string>
     <string name="adjust_hsv">Adjust HSV</string>
     <string name="title_activity_set_threshold">SetThresholdActivity</string>
     <string name="action_settings">Settings</string>

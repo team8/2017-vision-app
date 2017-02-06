@@ -3,25 +3,27 @@ package com.example.myfirstapp;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
+
+    private static final String TAG = "HSVSeekBar";
 
     private Activity activity;
 
     private SeekBar slider;
     private TextView display;
 
-    private int sliderId, displayId;
+    private int sliderId;
 
     private String title;
 
     private SharedPreferences preferences;
 
-    public HSVSeekBar(int sId, int dId, int def, String title, Activity activity) {
-        sliderId = sId;
-        displayId = dId;
+    public HSVSeekBar(int sliderId, int displayId, int def, String title, Activity activity) {
+        this.sliderId = sliderId;
         this.title = title;
         this.activity = activity;
 
@@ -30,6 +32,8 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
 
         preferences = PreferenceManager.getDefaultSharedPreferences(activity);
         setProgress(preferences.getInt(title, def));
+
+        slider.setOnSeekBarChangeListener(this);
     }
 
     private void setProgress(int progress) {
@@ -39,7 +43,6 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
         display.setText(title + ": " + progress);
         editor.apply();
     }
-
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {

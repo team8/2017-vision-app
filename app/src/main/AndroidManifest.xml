@@ -3,7 +3,7 @@
     package="com.example.myfirstapp">
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
 
     <uses-feature android:name="android.hardware.camera2.full" />
 
@@ -20,7 +20,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SetThresholdActivity"></activity>
+        <activity android:name=".SetThresholdActivity" android:screenOrientation="landscape"></activity>
     </application>
 
 </manifest>

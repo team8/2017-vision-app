@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                     Log.i(TAG, "OpenCV load success");
                     inputHSV = new Mat();
                     mCameraView.enableView();
-                    mCameraView.toggleFlashLight();
 
                     intrinsicMatrix = new Mat(3, 3, CvType.CV_64F);
                     for (int i = 0; i < 3; i++) {
@@ -125,7 +124,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     @Override
-    public void onCameraViewStarted(int width, int height) {}
+    public void onCameraViewStarted(int width, int height) {
+        mCameraView.toggleFlashLight();
+    }
 
     @Override
     public void onCameraViewStopped() {}
@@ -207,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
-        Imgproc.drawContours(input, contours, 0, new Scalar(0, 255, 0), 2);
+        Imgproc.drawContours(input, largestTwo, -1, new Scalar(0, 255, 0), 2);
         return input;
     }
 

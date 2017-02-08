@@ -17,11 +17,12 @@ public class SketchyCameraView extends JavaCameraView {
 
     public void toggleFlashLight() {
         if (mCamera == null) {
-            Log.d(TAG, "Camera not instantiated");
+            Log.w(TAG, "Camera not instantiated");
             return;
         }
         Camera.Parameters param = mCamera.getParameters();
         param.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+
         param.setExposureCompensation(param.getMinExposureCompensation());
         mCamera.setParameters(param);
     }

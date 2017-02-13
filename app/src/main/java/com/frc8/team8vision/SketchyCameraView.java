@@ -1,8 +1,7 @@
-package com.example.myfirstapp;
+package com.frc8.team8vision;
 
 import android.content.Context;
 import android.hardware.Camera;
-import android.util.AttributeSet;
 import android.util.Log;
 
 import org.opencv.android.JavaCameraView;

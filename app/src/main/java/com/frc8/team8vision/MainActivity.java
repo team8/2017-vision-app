@@ -1,4 +1,4 @@
-package com.example.myfirstapp;
+package com.frc8.team8vision;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         MatOfPoint combined = new MatOfPoint();
         if (largestTwo.size() == 2) {
             MatOfPoint first = largestTwo.get(0), second = largestTwo.get(1);
-            combined = concat(first, second);
+            combined = concat(contours);
             //combined = first;
         }
 
@@ -208,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
-        Imgproc.drawContours(input, largestTwo, -1, new Scalar(0, 255, 0), 2);
+        Imgproc.drawContours(input, contours, -1, new Scalar(0, 255, 0), 2);
         return input;
     }
 
@@ -224,6 +224,20 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         }
         MatOfPoint retval = new MatOfPoint();
         retval.fromArray(combined);
+        return retval;
+    }
+
+    public MatOfPoint concat(List<MatOfPoint> contours) {
+        int sizeThreshold = 50;
+
+        List<Point> points = new ArrayList<>();
+        for (MatOfPoint contour : contours) {
+            if (Imgproc.contourArea(contour) < sizeThreshold) continue;
+            List<Point> contourList = contour.toList();
+            points.addAll(contourList);
+        }
+        MatOfPoint retval = new MatOfPoint();
+        retval.fromList(points);
         return retval;
     }
 

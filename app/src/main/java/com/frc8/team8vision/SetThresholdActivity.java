@@ -1,15 +1,7 @@
-package com.example.myfirstapp;
+package com.frc8.team8vision;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.SeekBar;
-import android.widget.TextView;
-
-import java.util.Locale;
 
 public class SetThresholdActivity extends AppCompatActivity {
 

@@ -1,9 +1,8 @@
-package com.example.myfirstapp;
+package com.frc8.team8vision;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.widget.SeekBar;
 import android.widget.TextView;
 

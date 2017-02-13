@@ -1,4 +1,4 @@
-package com.example.myfirstapp;
+package com.frc8.team8vision;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

@@ -28,6 +28,7 @@ proguard/
 # IML files
 *.iml
 openCVLibrary320/*.iml
+app/app.iml
 
 # Android Studio Navigation editor temp files
 .navigation/

@@ -12,13 +12,10 @@ import java.nio.ByteBuffer;
 
 public class RequestReceiver extends BroadcastReceiver {
 
-    private static final String TAG = "RequestReceiver", hostName = "roboRIO-8-frc.local";
-
-    private static final int RIOPort = 8008;
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
-            Socket socket = new Socket(hostName, RIOPort);
+            Socket socket = new Socket(Constants.kRIOHostName, Constants.kRIOPortNumber);
             OutputStream out = socket.getOutputStream();
             Mat image = MainActivity.getImage();
             byte[] byteArray = toByteArray(image);

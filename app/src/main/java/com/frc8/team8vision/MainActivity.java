@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private static double x = 0, y = 0, z = Math.PI/2;
 
-    private static Mat inputHSV;
+    private static Mat imageRGB, imageHSV;
 
     private static Toast toast;
 
@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV load success");
-                    inputHSV = new Mat();
+                    imageHSV = new Mat();
                     mCameraView.enableView();
 
                     intrinsicMatrix = new Mat(3, 3, CvType.CV_64F);
@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         if (mCameraView != null) {
             mCameraView.disableView();
-            if (inputHSV != null) inputHSV.release();
+            if (imageHSV != null) imageHSV.release();
 
         }
     }
@@ -138,11 +138,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         // Debug statement
 
         input = track(input);
-        inputHSV.release();
+        imageHSV.release();
         return input;
     }
 
     public Mat track(Mat input) {
+        imageRGB = input;
+
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
         int hLow = preferences.getInt("Minimum Hue", 0);
@@ -158,8 +160,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         // Lower and upper hsv thresholds
         Scalar lower_bound = new Scalar(hLow, sLow, vLow), upper_bound = new Scalar(hHigh, sHigh, vHigh);
 
-        Imgproc.cvtColor(input, inputHSV, Imgproc.COLOR_RGB2HSV);
-        Core.inRange(inputHSV, lower_bound, upper_bound, mask);
+        Imgproc.cvtColor(input, imageHSV, Imgproc.COLOR_RGB2HSV);
+        Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
         // Detect contours
         List<MatOfPoint> contours = new ArrayList<>();
@@ -361,7 +363,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
             //int x = dpToPx(event.getX()), y = dpToPx(event.getY());
             int row = getRow(event.getY()), col = getCol(event.getY());
-            double[] hsv = inputHSV.get(row, col);
+            double[] hsv = imageHSV.get(row, col);
             String message = Arrays.toString(hsv);
             toast = Toast.makeText(getApplicationContext(), event.getX() + " " + event.getY(), Toast.LENGTH_SHORT);
             toast.show();
@@ -394,5 +396,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         DisplayMetrics displayMetrics = getBaseContext().getResources().getDisplayMetrics();
         return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
     }
+
+    public static Mat getImage() { return imageRGB; }
 
 }

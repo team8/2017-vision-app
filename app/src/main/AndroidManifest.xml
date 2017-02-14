@@ -21,6 +21,14 @@
             </intent-filter>
         </activity>
         <activity android:name=".SetThresholdActivity" android:screenOrientation="landscape"></activity>
+        <receiver
+            android:name=".RequestReceiver"
+            android:exported="true"
+            android:permission="">
+            <intent-filter>
+                <action android:name="com.frc8.team8vision.GET_DATA"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

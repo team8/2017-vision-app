@@ -20,10 +20,10 @@ public class Constants {
                                                              {0,                   0,                   1}};
     public static final double[] kGalaxyDistortionCoefficients = {.462497044, -1.63724827, -.00256097258, .00220231323};
 
-    public static final double kNexusFocalLengthX = 0, kNexusFocalLengthY = 0;
+    public static final double kNexusFocalLengthX = 2004.00956, kNexusFocalLengthY = 2000.42830;
     public static final double[][] kNexusIntrinsicMatrix = {{kNexusFocalLengthX, 0,                  0},
                                                             {0,                  kNexusFocalLengthY, 0},
                                                             {0,                  0,                  1}};
-    public static final double[] kNexusDistortionCoefficients = {0, 0, 0, 0};
+    public static final double[] kNexusDistortionCoefficients = {.118331802, -.566093895, .000616728302, -.000492778707};
 
 }

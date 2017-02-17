@@ -12,6 +12,13 @@ import org.opencv.core.Mat;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +52,7 @@ import java.util.HashMap;
  * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
  * 				<li>{@link WriteDataThread#s_hostName}: Private String storing the name of the Server to connect to</li>
  * 				<li>{@link WriteDataThread#s_RIOPort}: Private int storing the port to connect to the Server with</li>
+ * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
  * 			</ul>
  * 		</li>
  * 	</ul>
@@ -76,6 +84,9 @@ import java.util.HashMap;
  * Created by Alvin on 2/16/2017.
  * @see DataThreadState
  * @see WriteState
+ * 	 </ul>
+ *
+ * Created by Alvin on 2/16/2017.
  * @author Alvin
  */
 
@@ -121,11 +132,13 @@ public class WriteDataThread implements Runnable {
     private static double s_secondsAlive = 0;
     private static double s_stateAliveTime = 0;
     private static long s_frameUpdateRateMS = 100;
-    private static long s_changeStateWaitMS = 750;
-    private static boolean s_writerInitialized = false;
-    private static boolean s_running = false;
     private String s_hostName = "localhost";
     private static int s_RIOPort = 8008;
+    private static long s_changeStateWaitMS = 250;
+    private static boolean s_writerInitialized = false;
+    private static boolean s_running = false;
+    private String hostName = "127.0.0.1";
+    private static final int RIOPort = 8008;
 
     /**
      * Creates a WriteDataThread instance
@@ -173,7 +186,7 @@ public class WriteDataThread implements Runnable {
     }
 
     /**
-     * (DEBUG) Logs the Thread state
+     * (Debug) Logs the Thread state
      */
     private void logThreadState(){
         Log.d("WriteDataThread State", "ThreadState: "+s_dataThreadState);
@@ -220,6 +233,7 @@ public class WriteDataThread implements Runnable {
     }
 
     /**
+<<<<<<< HEAD
      * On receiving broadcast intent, send data
      */
     public void SendBroadcast(){
@@ -231,6 +245,8 @@ public class WriteDataThread implements Runnable {
     }
 
     /**
+=======
+>>>>>>> Alvin On 2-16-17: Added a thread to write data (currently only via JSON
      * Pauses the Thread
      * <br>Called when the program pauses/releases the Camera
      */
@@ -388,7 +404,11 @@ public class WriteDataThread implements Runnable {
 
     /**
      * Takes JSONObject and writes data to file
+<<<<<<< HEAD
      * @param json JSONObject storing vision data
+=======
+     * @param json
+>>>>>>> Alvin On 2-16-17: Added a thread to write data (currently only via JSON
      */
     private void writeJSON(JSONObject json){
         try{

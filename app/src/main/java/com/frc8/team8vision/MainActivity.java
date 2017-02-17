@@ -1,5 +1,6 @@
 package com.frc8.team8vision;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -14,6 +15,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.widget.Toast;
 
+import org.json.JSONException;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
@@ -31,12 +33,17 @@ import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -95,9 +102,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i("TEST ALVIN", "Activity Created");
+
         mCameraView = new SketchyCameraView(this, -1);
         setContentView(mCameraView);
         mCameraView.setCvCameraViewListener(this);
+
+        WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.BROADCAST_IDLE);
     }
 
     @Override
@@ -112,6 +123,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public void onResume() {
         super.onResume();
+
         mCameraView.toggleFlashLight();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
     }
@@ -122,17 +134,20 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if (mCameraView != null) {
             mCameraView.disableView();
             if (imageHSV != null) imageHSV.release();
-
         }
+        WriteDataThread.getInstance().destroy();
     }
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        mCameraView.toggleFlashLight();
+        //mCameraView.toggleFlashLight();
+        WriteDataThread.getInstance().resume();
     }
 
     @Override
-    public void onCameraViewStopped() {}
+    public void onCameraViewStopped() {
+        WriteDataThread.getInstance().pause();
+    }
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
@@ -142,6 +157,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         input = track(input);
         imageHSV.release();
+
         return input;
     }
 
@@ -247,7 +263,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Point[] corners = new Point[4];
         Point[] array = contour.toArray();
         if (array.length == 0) {
-            Log.d(TAG, "Empty array");
+//            Log.d(TAG, "Empty array");
             return null;
         }
         Arrays.sort(array, new Comparator<Point>() {
@@ -305,6 +321,33 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return angles[1];
     }
 
+    public double getYaw(Mat rotationMatrix) {
+        double theta1, theta2, theta3, s1, c1, c2;
+        theta1 = Math.atan2(rotationMatrix.get(1,2)[0], rotationMatrix.get(2,2)[0]);
+        c2 = Math.sqrt(rotationMatrix.get(0,0)[0] * rotationMatrix.get(0,0)[0] + rotationMatrix.get(0,1)[0] * rotationMatrix.get(0,1)[0]);
+        theta2 = Math.atan2(-rotationMatrix.get(0,2)[0], c2);
+        s1 = Math.sin(theta1);
+        c1 = Math.cos(theta1);
+        theta3 = Math.atan2(s1 * rotationMatrix.get(2,0)[0] - c2 * rotationMatrix.get(1,0)[0], c1 * rotationMatrix.get(1,1)[0] - s1 * rotationMatrix.get(2,1)[0]);
+        return Math.toDegrees(theta1);
+    }
+
+///*    public void verifyYaw() {
+//        for (int i = 0; i < 3; i++) {
+//            for (int j = 0; j < 3; j++) {
+//                xMat.put(i, j, xArr[i][j]);
+//                yMat.put(i, j, yArr[i][j]);
+//                zMat.put(i, j, zArr[i][j]);
+//            }
+//        }
+//        Mat rotMatrix = new Mat(3, 3, CvType.CV_64F), temp = new Mat(3, 3, CvType.CV_64F);
+//        Log.d(TAG, String.format(Locale.getDefault(), "%s\n%s\n%s", zMat.get(0, 0, new double[0]), yMat, xMat));
+//        Core.multiply(zMat, yMat, temp);
+//        Core.multiply(temp, xMat, rotMatrix);
+//        Log.d(TAG, rotMatrix.toString());
+//        if (z != getYaw(rotMatrix)) Log.d(TAG, "You failed");
+//    }*/
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -322,5 +365,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public static double getTurnAngle() { return turnAngle; }
 
     public static long getCycleTime() { return cycleTime; }
+
+    public int dpToPx(float dp) {
+        DisplayMetrics displayMetrics = getBaseContext().getResources().getDisplayMetrics();
+        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
+    }
 
 }

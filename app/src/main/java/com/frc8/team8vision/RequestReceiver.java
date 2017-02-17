@@ -3,6 +3,7 @@ package com.frc8.team8vision;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 import org.opencv.core.Mat;
 
@@ -12,14 +13,12 @@ import java.nio.ByteBuffer;
 
 public class RequestReceiver extends BroadcastReceiver {
 
+    private static final String TAG = "RequestReceiver";
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
-            Socket socket = new Socket(Constants.kRIOHostName, Constants.kRIOPortNumber);
-            OutputStream out = socket.getOutputStream();
-            Mat image = MainActivity.getImage();
-            byte[] byteArray = toByteArray(image);
-            out.write(byteArray);
+            Log.i("RequestRecieve", "Recieved request to send data");
+            WriteDataThread.getInstance().SendBroadcast();
         } catch (Exception e) {
             e.printStackTrace();
         }

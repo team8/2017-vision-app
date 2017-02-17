@@ -42,13 +42,18 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private static final String TAG = "MainActivity";
 
-    private static Mat intrinsicMatrix;
+    private static Mat imageRGB;
 
-    private static MatOfDouble distCoeffs;
+    private static double turnAngle = 0;
+    private static long cycleTime = 0;
 
-    private static Mat imageRGB, imageHSV;
+    private MatOfDouble distCoeffs;
+
+    private Mat intrinsicMatrix, imageHSV;
 
     private SketchyCameraView mCameraView;
+
+    private long lastCycleTimestamp = 0;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -141,6 +146,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public Mat track(Mat input) {
+        if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
+        lastCycleTimestamp = System.currentTimeMillis();
+
         imageRGB = input;
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -200,15 +208,20 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             for (int i = 0; i < 4; i++) {
                 Imgproc.circle(input, corners[i], 15, colors[i], -1);
             }
-            double yaw = getAnglePnP(corners, input);
+            turnAngle = getAnglePnP(corners, input);
 
             Imgproc.putText(input,
                     String.format(Locale.getDefault(), "%.2f",
-                    yaw), new Point(0, 700),
+                    turnAngle), new Point(0, 700),
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
         Imgproc.drawContours(input, contours, -1, new Scalar(0, 255, 0), 2);
+
+        Imgproc.putText(input,
+                Double.toString(cycleTime), new Point(1100, 700),
+                Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
+
         return input;
     }
 
@@ -305,5 +318,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public static Mat getImage() { return imageRGB; }
+
+    public static double getTurnAngle() { return turnAngle; }
+
+    public static long getCycleTime() { return cycleTime; }
 
 }

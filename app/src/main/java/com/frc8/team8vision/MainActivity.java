@@ -102,7 +102,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i("TEST ALVIN", "Activity Created");
 
         mCameraView = new SketchyCameraView(this, -1);
         setContentView(mCameraView);

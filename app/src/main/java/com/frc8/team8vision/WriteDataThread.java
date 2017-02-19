@@ -2,18 +2,14 @@ package com.frc8.team8vision;
 
 import android.app.Activity;
 import android.content.Context;
-import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Serializable;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +27,7 @@ import java.util.HashMap;
  * 				<li>{@link WriteDataThread#s_instance} (Singleton): Private static instance of this class</li>
  * 				<li>{@link WriteDataThread#s_dataThreadState} (private): Current state of connection</li>
  * 			    <li>{@link WriteDataThread#s_lastThreadState} (private): Last connection state</li>
+ * 			    <li>{@link WriteDataThread#s_writeState} (private): Current writing state</li>
  * 			    <li>{@link WriteDataThread#s_activity} (private): Activity hosting the thread</li>
  * 				<li><b>See:</b>{@link DataThreadState}</li>
  * 			</ul>
@@ -41,7 +38,11 @@ import java.util.HashMap;
  * 				<li>{@link WriteDataThread#s_stateAliveTime}: Private count of seconds the state has run for</li>
  * 			    <li>{@link WriteDataThread#s_frameUpdateRateMS}: Private count of ms between frame updates</li>
  * 			    <li>{@link WriteDataThread#s_changeStateWaitMS}: Private count of ms to wait when switching states</li>
+ * 				<li>{@link WriteDataThread#s_writerInitialized}: Private boolean representing whether the writer for
+ * 			                                                        the current writing state has been initialized	</li>
  * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
+ * 				<li>{@link WriteDataThread#s_hostName}: Private String storing the name of the Server to connect to</li>
+ * 				<li>{@link WriteDataThread#s_RIOPort}: Private int storing the port to connect to the Server with</li>
  * 			</ul>
  * 		</li>
  * 	</ul>
@@ -50,21 +51,29 @@ import java.util.HashMap;
  * 	<ul>
  * 		<li>{@link WriteDataThread#getInstance()}</li>
  * 		<li>{@link WriteDataThread#SetState(DataThreadState)}</li>
+ * 		<li>{@link WriteDataThread#SetWriteState(WriteState)}</li>
  * 	</ul>
  *
  * <h1><b>External Access Functions</b>
  * 	<br><BLOCKQUOTE>For using as a wrapper for RIOdroid</BLOCKQUOTE></h1>
  * 	<ul>
  * 		<li>{@link WriteDataThread#start(Activity, WriteState)}</li>
+ * 		<li>{@link WriteDataThread#SendBroadcast()}</li>
+ * 		<li>{@link WriteDataThread#pause()}</li>
+ * 		<li>{@link WriteDataThread#resume()}</li>
+ * 		<li>{@link WriteDataThread#destroy()}</li>
  * 	</ul>
  *
  * 	<h1><b>Internal Functions</b>
  * 	 <br><BLOCKQUOTE>Paired with external access functions. These compute the actual function for the external access</BLOCKQUOTE></h1>
  * 	 <ul>
  * 	     <li>{@link WriteDataThread#InitializeWriter()}</li>
+ * 	     <li>{@link WriteDataThread#WriteMatImage()}</li>
  * 	 </ul>
  *
  * Created by Alvin on 2/16/2017.
+ * @see DataThreadState
+ * @see WriteState
  * @author Alvin
  */
 
@@ -84,6 +93,17 @@ public class WriteDataThread implements Runnable {
     public enum DataThreadState{
         PREINIT, IDLE, WRITING, INITIALIZE_WRITER, PAUSED
     }
+
+    /**
+     *  State of the writer
+     *
+     *  <ul>
+     *      <li>{@link WriteState#IDLE}</li>
+     *      <li>{@link WriteState#JSON}</li>
+     *      <li>{@link WriteState#BROADCAST}</li>
+     *      <li>{@link WriteState#BROADCAST_IDLE}</li>
+     *  </ul>
+     */
     public enum WriteState{
         IDLE, JSON, BROADCAST, BROADCAST_IDLE
     }
@@ -102,8 +122,8 @@ public class WriteDataThread implements Runnable {
     private static long s_changeStateWaitMS = 250;
     private static boolean s_writerInitialized = false;
     private static boolean s_running = false;
-    private String hostName = "127.0.0.1";
-    private static final int RIOPort = 8008;
+    private String s_hostName = "localhost";
+    private static int s_RIOPort = 8008;
 
     /**
      * Creates a WriteDataThread instance
@@ -136,6 +156,10 @@ public class WriteDataThread implements Runnable {
         }
     }
 
+    /**
+     * Sets the state of the writing
+     * @param state State to switch to
+     */
     private void SetWriteState(WriteState state){
         if(s_writeState.equals(state)){
             Log.w("WriteState Error:", "no change to write state");
@@ -146,23 +170,16 @@ public class WriteDataThread implements Runnable {
         }
     }
 
-    public void SendBroadcast(){
-        if(!s_writeState.equals(WriteState.BROADCAST_IDLE)){
-            Log.e("WriteState Error", "Trying to send braodcast when thread is not waiting to send");
-        }else{
-            this.logThreadState();
-            this.logWriteState();
-            s_writeState = WriteState.BROADCAST;
-        }
-    }
-
     /**
-     * (Debug) Logs the Thread state
+     * (DEBUG) Logs the Thread state
      */
     private void logThreadState(){
         Log.d("WriteDataThread State", "ThreadState: "+s_dataThreadState);
     }
 
+    /**
+     * (DEBUG) Logs the Write state
+     */
     private void logWriteState(){
         Log.d("WriteState state", "WriteState: "+s_writeState);
     }
@@ -198,6 +215,17 @@ public class WriteDataThread implements Runnable {
 
         // This line doesn't do anything, just prepares for changing the write state in resume()
         s_writeState = writeState;
+    }
+
+    /**
+     * On receiving broadcast intent, send data
+     */
+    public void SendBroadcast(){
+        if(!s_writeState.equals(WriteState.BROADCAST_IDLE)){
+            Log.e("WriteState Error", "Trying to send broadcast when thread is not waiting to send");
+        }else{
+            s_writeState = WriteState.BROADCAST;
+        }
     }
 
     /**
@@ -324,6 +352,7 @@ public class WriteDataThread implements Runnable {
      */
     private void writeData(HashMap<String,Object> data){
 
+        // Create JSONObject from given map data
         JSONObject json = new JSONObject();
         try {
             for (String key : data.keySet()) {
@@ -333,6 +362,7 @@ public class WriteDataThread implements Runnable {
             e.printStackTrace();
         }
 
+        // Choose writing method based on write state
         switch (s_writeState) {
             case IDLE:
                 Log.e("WriteState Error", "Trying to write in idle write state");
@@ -352,7 +382,7 @@ public class WriteDataThread implements Runnable {
 
     /**
      * Takes JSONObject and writes data to file
-     * @param json
+     * @param json JSONObject storing vision data
      */
     private void writeJSON(JSONObject json){
         try{
@@ -364,13 +394,18 @@ public class WriteDataThread implements Runnable {
         }
     }
 
+    /**
+     * Takes JSONObject and writes data to socket
+     * @param json JSONObject storing vision data
+     */
     private void writeSocket(JSONObject json){
         try {
-            Log.i("-----WriteSocket-----", "Opening socket on "+hostName+":"+RIOPort);
-            Socket socket = new Socket(hostName, RIOPort);
-            Log.i("-----WriteSocket-----", "Socket Opened");
+//            Log.d("-----WriteSocket-----", "Opening socket on "+ s_hostName +":"+ s_RIOPort);
+            Socket socket = new Socket(s_hostName, s_RIOPort);
+//            Log.d("-----WriteSocket-----", "Socket Opened");
             OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
             out.write(json.toString());
+//            Log.d("-----JSON-----", json.toString());
             out.flush();
             out.close();
             socket.close();

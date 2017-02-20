@@ -2,10 +2,12 @@ package com.frc8.team8vision;
 
 import android.app.Activity;
 import android.content.Context;
+import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.opencv.core.CvException;
 import org.opencv.core.Mat;
 
 import java.io.IOException;
@@ -119,7 +121,7 @@ public class WriteDataThread implements Runnable {
     private static double s_secondsAlive = 0;
     private static double s_stateAliveTime = 0;
     private static long s_frameUpdateRateMS = 100;
-    private static long s_changeStateWaitMS = 250;
+    private static long s_changeStateWaitMS = 750;
     private static boolean s_writerInitialized = false;
     private static boolean s_running = false;
     private String s_hostName = "localhost";
@@ -317,12 +319,16 @@ public class WriteDataThread implements Runnable {
     private DataThreadState WriteMatImage(){
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("state", "STREAMING");
-//        String image_data = Base64.encodeToString(toByteArray(MainActivity.getImage()), Base64.DEFAULT);
-        String image_data = "wow-data!";
-        data.put("image_rgb", image_data);
-        writeData(data);
+        String image_data = null;
+        Mat image_rgb = MainActivity.getImage();
+        if (image_data != null) {
+            image_data = Base64.encodeToString(toByteArray(image_rgb), Base64.DEFAULT);
+//            String image_data = "wow-data!";
+            data.put("image_rgb", image_data);
+            writeData(data);
+        }
 
-        return DataThreadState.WRITING;
+        return s_dataThreadState;
     }
 
     /**

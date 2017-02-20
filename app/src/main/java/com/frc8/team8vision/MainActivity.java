@@ -31,6 +31,7 @@ import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
@@ -107,11 +108,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         setContentView(mCameraView);
         mCameraView.setCvCameraViewListener(this);
 
-        WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.BROADCAST_IDLE);
+        WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
     }
 
     @Override
     public void onPause() {
+        WriteDataThread.getInstance().pause();
         super.onPause();
 
         if (mCameraView != null) {
@@ -139,13 +141,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        //mCameraView.toggleFlashLight();
+        mCameraView.toggleFlashLight();
         WriteDataThread.getInstance().resume();
     }
 
     @Override
     public void onCameraViewStopped() {
-        WriteDataThread.getInstance().pause();
     }
 
     @Override
@@ -359,7 +360,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         startActivity(intent);
     }
 
-    public static Mat getImage() { return imageRGB; }
+    public static Mat getImage() {
+        if (!imageRGB.empty()) {
+            Mat resized_rgb = new Mat();
+            Imgproc.resize(imageRGB, resized_rgb, new Size(320, 180));
+            return resized_rgb;
+        } else {
+            return null;
+        }
+    }
 
     public static double getTurnAngle() { return turnAngle; }
 

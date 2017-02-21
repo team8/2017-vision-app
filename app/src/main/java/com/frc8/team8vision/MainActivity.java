@@ -124,8 +124,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public void onResume() {
         super.onResume();
-
-        mCameraView.toggleFlashLight();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
     }
 
@@ -141,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public void onCameraViewStarted(int width, int height) {
+        mCameraView.setParameters();
         mCameraView.toggleFlashLight();
         WriteDataThread.getInstance().resume();
     }
@@ -151,21 +150,19 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat input = inputFrame.rgba();
+        imageRGB = inputFrame.rgba();
 
-        // Debug statement
-
-        input = track(input);
+        imageRGB = track(imageRGB);
         imageHSV.release();
 
-        return input;
+        return imageRGB;
     }
 
     public Mat track(Mat input) {
+        Log.d(TAG, "track() called");
+        Imgproc.rectangle(input, new Point(0,0), new Point(100, 100),new Scalar(255, 255, 255));
         if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
         lastCycleTimestamp = System.currentTimeMillis();
-
-        imageRGB = input;
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
@@ -361,7 +358,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public static Mat getImage() {
-        if (!imageRGB.empty()) {
+        if (imageRGB != null && !imageRGB.empty()) {
             Mat resized_rgb = new Mat();
             Imgproc.resize(imageRGB, resized_rgb, new Size(320, 180));
             return resized_rgb;

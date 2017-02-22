@@ -63,6 +63,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private long lastCycleTimestamp = 0;
 
+    private int mWidth = 0, mHeight = 0;
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -139,8 +141,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public void onCameraViewStarted(int width, int height) {
+        mWidth = width;
+        mHeight = height;
         mCameraView.setParameters();
-        mCameraView.toggleFlashLight();
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
+            mCameraView.toggleFlashLight();
+        }
         WriteDataThread.getInstance().resume();
     }
 
@@ -159,8 +165,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public Mat track(Mat input) {
-        Log.d(TAG, "track() called");
-        Imgproc.rectangle(input, new Point(0,0), new Point(100, 100),new Scalar(255, 255, 255));
         if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
         lastCycleTimestamp = System.currentTimeMillis();
 
@@ -225,14 +229,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
             Imgproc.putText(input,
                     String.format(Locale.getDefault(), "%.2f",
-                    turnAngle), new Point(0, 700),
+                    turnAngle), new Point(0, mHeight - 30),
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
         Imgproc.drawContours(input, contours, -1, new Scalar(0, 255, 0), 2);
 
         Imgproc.putText(input,
-                Double.toString(cycleTime), new Point(1100, 700),
+                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
                 Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
 
         return input;

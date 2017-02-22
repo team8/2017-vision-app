@@ -22,7 +22,7 @@ import java.util.List;
 public class SketchyCameraView extends CameraBridgeViewBase implements Camera.PreviewCallback {
 
     private static final int MAGIC_TEXTURE_ID = 10;
-    private static final String TAG = "JavaCameraView";
+    private static final String TAG = "SketchyCameraView";
 
     private byte mBuffer[];
     private Mat[] mFrameChain;
@@ -225,7 +225,6 @@ public class SketchyCameraView extends CameraBridgeViewBase implements Camera.Pr
     }
 
     public void onPreviewFrame(byte[] frame, Camera arg1) {
-        Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
         synchronized (this) {
             mFrameChain[1 - mChainIdx].put(0, 0, frame);
             this.notify();

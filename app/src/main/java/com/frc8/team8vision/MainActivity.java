@@ -63,6 +63,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private long lastCycleTimestamp = 0;
 
+    private int mWidth = 0, mHeight = 0;
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -124,8 +126,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public void onResume() {
         super.onResume();
-
-        mCameraView.toggleFlashLight();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
     }
 
@@ -141,7 +141,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        mCameraView.toggleFlashLight();
+        mWidth = width;
+        mHeight = height;
+        mCameraView.setParameters();
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
+            mCameraView.toggleFlashLight();
+        }
         WriteDataThread.getInstance().resume();
     }
 
@@ -151,21 +156,17 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat input = inputFrame.rgba();
+        imageRGB = inputFrame.rgba();
 
-        // Debug statement
-
-        input = track(input);
+        imageRGB = track(imageRGB);
         imageHSV.release();
 
-        return input;
+        return imageRGB;
     }
 
     public Mat track(Mat input) {
         if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
         lastCycleTimestamp = System.currentTimeMillis();
-
-        imageRGB = input;
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
@@ -228,14 +229,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
             Imgproc.putText(input,
                     String.format(Locale.getDefault(), "%.2f",
-                    turnAngle), new Point(0, 700),
+                    turnAngle), new Point(0, mHeight - 30),
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
 
         Imgproc.drawContours(input, contours, -1, new Scalar(0, 255, 0), 2);
 
         Imgproc.putText(input,
-                Double.toString(cycleTime), new Point(1100, 700),
+                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
                 Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
 
         return input;
@@ -361,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public static Mat getImage() {
-        if (!imageRGB.empty()) {
+        if (imageRGB != null && !imageRGB.empty()) {
             Mat resized_rgb = new Mat();
             Imgproc.resize(imageRGB, resized_rgb, new Size(320, 180));
             return resized_rgb;

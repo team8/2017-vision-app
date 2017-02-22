@@ -202,21 +202,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 return 0;
             }
         });
-        List<MatOfPoint> largestTwo = new ArrayList<>();
-        largestTwo.add(contours.get(0));
-        if (contours.size() > 1) largestTwo.add(contours.get(1));
-
-        // Combine largest two contours
-        MatOfPoint combined = new MatOfPoint();
-        if (largestTwo.size() == 2) {
-            MatOfPoint first = largestTwo.get(0), second = largestTwo.get(1);
-            combined = concat(contours);
-            //combined = first;
-        }
 
         //Track corners of combined contour
         Point[] corners;
-        if ((corners = getCorners(combined)) != null) {
+        if ((corners = getCorners(contours)) != null) {
             Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                     new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
 
@@ -242,29 +231,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return input;
     }
 
-    public MatOfPoint concat(List<MatOfPoint> contours) {
-        int sizeThreshold = 50;
-
-        List<Point> points = new ArrayList<>();
+    public Point[] getCorners(List<MatOfPoint> contours) {
+        List<Point>  combined = new ArrayList<>();
         for (MatOfPoint contour : contours) {
-            if (Imgproc.contourArea(contour) < sizeThreshold) continue;
-            List<Point> contourList = contour.toList();
-            points.addAll(contourList);
-        }
-        MatOfPoint retval = new MatOfPoint();
-        retval.fromList(points);
-        return retval;
-    }
-
-    public Point[] getCorners(MatOfPoint contour) {
-        if (contour == null) {
-            Log.d(TAG, "Contour is null");
-            return null;
+            combined.addAll(contour.toList());
         }
         Point[] corners = new Point[4];
-        Point[] array = contour.toArray();
+        Point[] array = combined.toArray(new Point[0]);
         if (array.length == 0) {
-//            Log.d(TAG, "Empty array");
+            Log.d(TAG, "Empty array");
             return null;
         }
         Arrays.sort(array, new Comparator<Point>() {
@@ -322,40 +297,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return angles[1];
     }
 
-    public double getYaw(Mat rotationMatrix) {
-        double theta1, theta2, theta3, s1, c1, c2;
-        theta1 = Math.atan2(rotationMatrix.get(1,2)[0], rotationMatrix.get(2,2)[0]);
-        c2 = Math.sqrt(rotationMatrix.get(0,0)[0] * rotationMatrix.get(0,0)[0] + rotationMatrix.get(0,1)[0] * rotationMatrix.get(0,1)[0]);
-        theta2 = Math.atan2(-rotationMatrix.get(0,2)[0], c2);
-        s1 = Math.sin(theta1);
-        c1 = Math.cos(theta1);
-        theta3 = Math.atan2(s1 * rotationMatrix.get(2,0)[0] - c2 * rotationMatrix.get(1,0)[0], c1 * rotationMatrix.get(1,1)[0] - s1 * rotationMatrix.get(2,1)[0]);
-        return Math.toDegrees(theta1);
-    }
-
-///*    public void verifyYaw() {
-//        for (int i = 0; i < 3; i++) {
-//            for (int j = 0; j < 3; j++) {
-//                xMat.put(i, j, xArr[i][j]);
-//                yMat.put(i, j, yArr[i][j]);
-//                zMat.put(i, j, zArr[i][j]);
-//            }
-//        }
-//        Mat rotMatrix = new Mat(3, 3, CvType.CV_64F), temp = new Mat(3, 3, CvType.CV_64F);
-//        Log.d(TAG, String.format(Locale.getDefault(), "%s\n%s\n%s", zMat.get(0, 0, new double[0]), yMat, xMat));
-//        Core.multiply(zMat, yMat, temp);
-//        Core.multiply(temp, xMat, rotMatrix);
-//        Log.d(TAG, rotMatrix.toString());
-//        if (z != getYaw(rotMatrix)) Log.d(TAG, "You failed");
-//    }*/
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
     public void launchSetThresholdActivity(MenuItem item) {
         Intent intent = new Intent(this, SetThresholdActivity.class);
         startActivity(intent);
@@ -374,10 +315,5 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public static double getTurnAngle() { return turnAngle; }
 
     public static long getCycleTime() { return cycleTime; }
-
-    public int dpToPx(float dp) {
-        DisplayMetrics displayMetrics = getBaseContext().getResources().getDisplayMetrics();
-        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-    }
 
 }

@@ -6,11 +6,14 @@ import android.preference.PreferenceManager;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+/**
+ * Custom seekbar class. An HSVSeekBar is an encapsulation of one of the seekbars
+ * in the set threshold activity, and contains the seekbar itself, as well as its
+ * name, id, and text field readout. This is mostly for easier retrieval of stored settings.
+ *
+ * @author Calvin Yan
+ */
 public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
-
-    private static final String TAG = "HSVSeekBar";
-
-    private Activity activity;
 
     private SeekBar slider;
     private TextView display;
@@ -19,12 +22,12 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
 
     private String title;
 
+    // The settings contained in the app - similar to a hash table
     private SharedPreferences preferences;
 
     public HSVSeekBar(int sliderId, int displayId, int def, String title, Activity activity) {
         this.sliderId = sliderId;
         this.title = title;
-        this.activity = activity;
 
         slider = (SeekBar)activity.findViewById(sliderId);
         display = (TextView)activity.findViewById(displayId);
@@ -35,6 +38,7 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
         slider.setOnSeekBarChangeListener(this);
     }
 
+    // Change slider and store its value in preferences
     private void setProgress(int progress) {
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(title, progress);

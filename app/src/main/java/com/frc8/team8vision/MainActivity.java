@@ -35,6 +35,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+import org.json.JSONObject;
+
+/**
+ * The app's startup activity, as suggested by its name. Handles all
+ * camera operations and vision processing.
+ * @author Calvin Yan
+ */
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "MainActivity";
@@ -44,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     // Lock for synchronized access of imageRGB
     private final Object lock = new Object();
 
-    private static double turnAngle = 0, xDist = 0, yDist = 0, zDist = 0;
+    private static double turnAngle = 0, xDist = 0;
     private static long cycleTime = 0;
 
     private MatOfDouble distCoeffs;
@@ -57,9 +64,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private int mWidth = 0, mHeight = 0, mPPI = 0;
     private int mResolutionFactor = 3;      // Divides screen images by given factor
-	double fontSize = 2.0/mResolutionFactor;
-	int fontThickness = (int) Math.ceil(3.0/mResolutionFactor);
 
+    /**
+     * The delay between starting the app and loading OpenCV libraries means that
+     * all OpenCV objects must be instantiated in this callback function.
+     */
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -67,7 +76,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV load success");
                     imageHSV = new Mat();
+                    // Start camera feed
                     mCameraView.enableView();
+
+                    /*
+                     * Load intrinsic matrix and distortion coefficients of camera;
+                     * used for pose estimation
+                     */
 
                     intrinsicMatrix = new Mat(3, 3, CvType.CV_64F);
                     distCoeffs = new MatOfDouble();
@@ -144,9 +159,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public void onCameraViewStarted(int width, int height) {
         mWidth = width;
         mHeight = height;
-        mCameraView.setParameters();
 
-//        mCameraView.toggleFlashLight();
+        // Reduce exposure and turn on flashlight - to be used with reflective tape
+        //mCameraView.setParameters();
+        //mCameraView.toggleFlashLight();
 
         WriteDataThread.getInstance().resume();
         JPEGStreamerThread.getInstance().resume();
@@ -157,6 +173,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     @Override
+    /**
+     * Automatically called before each image frame is displayed. This is where
+     * the app begins to process the image
+     */
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         synchronized (lock) {
             imageRGB_raw = inputFrame.rgba().clone();
@@ -170,137 +190,113 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return imageRGB;
     }
 
+    /**
+     * Detects the vision targets through HSV filtering and calls getPosePnP to
+     * estimate camera pose.
+     * @param input - the image captured by the camera
+     * @return input - the modified image to show results of processing
+     */
     public Mat track(Mat input) {
+        // Calculates time between method calls; this shows the amount of lag
         if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
         lastCycleTimestamp = System.currentTimeMillis();
 
+        // Retrieve HSV threshold stored in app, see SetThresholdActivity.java for more info
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
         int[] sliderValues = new int[6];
-
         for (int i = 0; i < 6; i++) {
             sliderValues[i] = preferences.getInt(Constants.kSliderNames[i], Constants.kSliderDefaultValues[i]);
         }
 
-        // Apply HSV thresholding to input
+        /*
+         * The app detects vision targets by applying an HSV threshold to the image.
+         * This takes a range of possible hues, a range of possible saturations, and
+         * a range of possible values in the HSV colorspace, and finds all pixels that
+         * fall in these possible values. The result is a black and white image where
+         * pixels in the range are white and others are black.
+         */
         Mat mask = new Mat();
 
         // Lower and upper hsv thresholds
         Scalar lower_bound = new Scalar(sliderValues[0], sliderValues[1], sliderValues[2]),
                 upper_bound = new Scalar(sliderValues[3], sliderValues[4], sliderValues[5]);
 
+        // Convert RGB to HSV
         Imgproc.cvtColor(input, imageHSV, Imgproc.COLOR_RGB2HSV);
+        // Apply threshold
         Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
-        // Detect contours
-        List<MatOfPoint> contours = new ArrayList<>();
-        Imgproc.findContours(mask, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        // Detect corners on vision target using Harris Corner Detector
+        MatOfPoint cornerMat = new MatOfPoint();
+        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .1, 10, new Mat(), 7, true, .05);
+        Point[] corners = cornerMat.toArray();
 
-        if (contours.isEmpty()) return input;
-
-        // Sort contours by area and identify the two largest
-        Collections.sort(contours, new Comparator<MatOfPoint>() {
-            @Override
-            public int compare(MatOfPoint m1, MatOfPoint m2) {
-                double area1 = Imgproc.contourArea(m1), area2 = Imgproc.contourArea(m2);
-                if (area1 > area2) return -1;
-                if (area1 < area2) return 1;
-                return 0;
+        /*
+         * Sort corners based on the sum of their x and y coordinates. This is to ensure
+         * that they are always in the same order. Sketchy, but it works.
+         */
+        Arrays.sort(corners, new Comparator<Point>() {
+            public int compare(Point p1, Point p2) {
+                return (int)((p1.x + p1.y) - (p2.x + p2.y));
             }
         });
 
-		MatOfPoint cont1 = contours.get(0);
-		MatOfPoint cont2 = contours.get(0);
-		contours = new ArrayList<>();
+        // Draw corners on image
+        for (int i = 0; i < corners.length; i++) {
+            Imgproc.circle(input, corners[i], 15, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
+        }
 
-		contours.add(cont1); contours.add(cont2);
-
-        //Track corners of combined contour
-        Point[] corners;
-        if ((corners = getCorners(contours)) != null) {
-            Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
-                    new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
-
-            //corners = new Point[] {new Point(250, 750), new Point(1275, 750), new Point(250, 250), new Point(1275, 250)};
-
-            for (int i = 0; i < 4; i++) {
-                Imgproc.circle(input, corners[i], 15, colors[i], -1);
-            }
+        if ((corners.length == 8)) {
+            // Compute the three rotations and three translations of the camera
             getPosePnP(corners, input);
 
             Imgproc.putText(input,
-                    String.format(Locale.getDefault(), "%.2f", xDist) + ", " +
-                    String.format(Locale.getDefault(), "%.2f", yDist) + ", " +
-                    String.format(Locale.getDefault(), "%.2f", zDist),
-					new Point(0, mHeight - 30/(float)mResolutionFactor),
-                    Core.FONT_HERSHEY_SIMPLEX, fontSize, new Scalar(0, 255, 0), fontThickness);
-
+                    String.format(Locale.getDefault(), "%.2f",
+                    xDist), new Point(0, mHeight - 30),
+                    Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
-
-        Imgproc.drawContours(input, contours, -1, new Scalar(0, 255, 0), 2);
-
         Imgproc.putText(input,
-                Double.toString(cycleTime),
-				new Point(mWidth - 200/(float)mResolutionFactor, mHeight - 30/(float)mResolutionFactor),
-                Core.FONT_HERSHEY_SIMPLEX, fontSize, new Scalar(0, 255, 0), fontThickness);
-
+                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
+                Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         return input;
     }
 
-    public Point[] getCorners(List<MatOfPoint> contours) {
-        List<Point>  combined = new ArrayList<>();
-        for (MatOfPoint contour : contours) {
-            combined.addAll(contour.toList());
-        }
-        Point[] corners = new Point[4];
-        Point[] array = combined.toArray(new Point[0]);
-        if (array.length == 0) {
-            Log.d(TAG, "Empty array");
-            return null;
-        }
-        Arrays.sort(array, new Comparator<Point>() {
-            @Override
-            public int compare(Point o1, Point o2) {
-                return (int)((o1.y - o1.x) - (o2.y - o2.x));
-            }
-        });
-        corners[1] = array[0];
-        corners[3] = array[array.length - 1];
-        Arrays.sort(array, new Comparator<Point>() {
-            @Override
-            public int compare(Point o1, Point o2) {
-                return (int)((o1.y + o1.x) - (o2.y + o2.x));
-            }
-        });
-        corners[0] = array[0];
-        corners[2] = array[array.length - 1];
-
-        return corners;
-    }
-
+    /**
+     * Determines the transformation of a camera relative to the vision target.
+     * The transformation is broken down into rotations and translations along the x, y, and z axes.
+     * Note that the rotation values are accurate while the translations are not - I'm still trying
+     * to figure out how to use the middle of the target as the reference point, instead of the top
+     * left corner.
+     * @param src - corners of the image contained in an array
+     * @param input - the image captured by the camera
+     */
     public void getPosePnP(Point[] src, Mat input) {
-        double dist = 0, scalar = 1, width = Constants.kVisionTargetWidth * mPPI * scalar, height = Constants.kVisionTargetHeight * mPPI * scalar;
-        double leftX = 0, topY = 0, rightX = width, bottomY = height, z = dist - 2 * mPPI * scalar;
-
-        Imgproc.rectangle(input, new Point(leftX/mResolutionFactor, topY/mResolutionFactor),
-				new Point(rightX/mResolutionFactor, bottomY/mResolutionFactor), new Scalar(255, 255, 255), fontThickness);
-        //src = new Point[]{new Point(0, 500), new Point(1025, 500), new Point(0, 0), new Point(1025, 0)};
-        Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
-                new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
-        MatOfPoint2f dstPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, dist), new Point3(rightX, topY, dist),
-                new Point3(rightX, bottomY, dist), new Point3(leftX, bottomY, dist));
+        double scalar = mPPI, width = Constants.kVisionTargetWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
+        double leftX = (mWidth - width) / 2, topY = (mHeight - height) / 2, left1X = leftX + Constants.kTapeWidth * scalar, rightX = leftX + width, right1X = rightX - Constants.kTapeWidth * scalar , bottomY = topY + height, z = 0 - 2 * scalar;
+        MatOfPoint2f dstPoints = new MatOfPoint2f();
+        dstPoints.fromArray(src);
+        // In order to calculate the pose, we create a model of the vision targets using 3D coordinates
+        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3((leftX+rightX)/2, (topY+bottomY)/2, 0),
+                                                new Point3(leftX, topY, 0),
+                                                new Point3(left1X, topY, 0),
+                                                new Point3(leftX, bottomY, 0),
+                                                new Point3(left1X, bottomY, 0),
+                                                new Point3(right1X, topY, 0),
+                                                new Point3(rightX, topY, 0),
+                                                new Point3(right1X, bottomY, 0),
+                                                new Point3(rightX, bottomY, 0));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
+
+        /* Creates a rectangular prism with 3D coordinates and uses the calculated transformation
+         * to project the prism on the vision target. Aside from looking really cool this doesn't do much.
+         * I will delete it later.
+         */
+
         MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(leftX, topY, 0), new Point3(rightX, topY, 0), new Point3(rightX, bottomY, 0), new Point3(leftX, bottomY, 0),
                                                     new Point3(leftX, topY, z), new Point3(rightX, topY, z), new Point3(rightX, bottomY, z), new Point3(leftX, bottomY, z),
-                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * mPPI));
-       /* MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(0, y, dist), new Point3(x, y, dist),
-                new Point3(0, 0, dist), new Point3(x, 0, dist));
-        MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
-        Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(0, 0, 0), new Point3(x, 0, 0), new Point3(x, y, 0), new Point3(0, y, 0),
-                new Point3(0, 0, z), new Point3(x, 0, z), new Point3(x, y, z), new Point3(0, y, z));*/
+                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar),
+                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, 0));
         MatOfPoint2f result = new MatOfPoint2f();
         Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
         Point[] arr = result.toArray();
@@ -310,17 +306,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 //            Imgproc.line(input, arr[i], arr[i+4], red, 5/mResolutionFactor);
 //            Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5/mResolutionFactor);
         }
+
+        // Estimates the position of the tip of the peg
         Imgproc.circle(input, arr[8], 10, new Scalar(255, 255, 255), -1);
-        Log.d(TAG, tvecs.size().toString());
-        xDist = tvecs.get(0, 0)[0] / mPPI;
-		yDist = tvecs.get(1, 0)[0] / mPPI;
-		zDist = tvecs.get(2, 0)[0] / mPPI;
-        /*Point3[] newSrc = new Point3[4];
-        for (int i = 0; i < 4; i++) newSrc[i] = new Point3(src[i].x, src[i].y, 500);
-        srcPoints = new MatOfPoint3f();
-        srcPoints.fromArray(newSrc);
-        dstPoints = new MatOfPoint2f(new Point(0, y), new Point(x, y), new Point(0, 0), new Point(x, 0));
-        Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);*/
+        // Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
+        double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
+        // Given the perceived x displacement,
+        xDist = ((arr[8].x - mWidth / 2) * zDist / 4) / mPPI;
         double[] angles = rvecs.toArray();
         turnAngle = Math.toDegrees(angles[1]);
     }
@@ -337,12 +329,18 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         startActivity(intent);
     }
 
+    /**
+     * A Samsung Galaxy S4 was used for vision testing when the Nexus was unavailable.
+     * Its properties are different from the Nexus, so sometimes the app must determine
+     * which phone is running it.
+     */
     private boolean isGalaxy() { return Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP; }
+
+    // Getter methods allowing the networking utility classes to retrieve data
 
     public static Mat getImage() {
        return imageRGB_raw;
     }
-
     public static double getTurnAngle() { return turnAngle; }
 
     public static double getXDisplacement() { return xDist; }

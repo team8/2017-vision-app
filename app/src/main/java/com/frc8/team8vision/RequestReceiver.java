@@ -11,6 +11,12 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
+/**
+ * Utility class that receives adb broadcasts from the robot and calls the
+ * appropriate functions in WriteDataThread.
+ *
+ * @author Calvin Yan
+ */
 public class RequestReceiver extends BroadcastReceiver {
 
     private static final String TAG = "RequestReceiver";

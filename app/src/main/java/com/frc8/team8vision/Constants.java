@@ -1,5 +1,10 @@
 package com.frc8.team8vision;
 
+/**
+ * Stores various constants to be used by the rest of the app.
+ *
+ * @author Calvin Yan
+ */
 public class Constants {
 
     // roboRIO networking constants
@@ -19,7 +24,7 @@ public class Constants {
                                                  "Maximum Hue", "Maximum Saturation", "Maximum Value"};
 
     // Physical specs of peg (all measurements are in inches)
-    public static final double kVisionTargetWidth = 10.25, kVisionTargetHeight = 5.0, kPegLength = 10.5;
+    public static final double kVisionTargetWidth = 10.25, kTapeWidth = 2, kVisionTargetHeight = 5.0, kPegLength = 10.5;
 
     // Camera calibration constants
 

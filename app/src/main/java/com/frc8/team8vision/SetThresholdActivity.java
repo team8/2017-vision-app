@@ -5,6 +5,13 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.CheckBox;
 
+/**
+ * This activity represents a setting screen that can be accessed to adjust
+ * the HSV threshold. It maintains six sliders, or seekbars, which represent
+ * the minimum and maximum HSV.
+ *
+ * @author Calvin Yan
+ */
 public class SetThresholdActivity extends AppCompatActivity {
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];

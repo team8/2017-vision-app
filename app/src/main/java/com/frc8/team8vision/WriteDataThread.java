@@ -50,8 +50,6 @@ import java.util.HashMap;
  * 				<li>{@link WriteDataThread#s_writerInitialized}: Private boolean representing whether the writer for
  * 			                                                        the current writing state has been initialized	</li>
  * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
- * 				<li>{@link WriteDataThread#s_hostName}: Private String storing the name of the Server to connect to</li>
- * 				<li>{@link WriteDataThread#s_RIOPort}: Private int storing the port to connect to the Server with</li>
  * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
  * 			</ul>
  * 		</li>
@@ -132,9 +130,7 @@ public class WriteDataThread implements Runnable {
     private static double s_secondsAlive = 0;
     private static double s_stateAliveTime = 0;
     private static long s_frameUpdateRateMS = 100;
-    private String s_hostName = "localhost";
-    private static int s_RIOPort = 8008;
-    private static long s_changeStateWaitMS = 250;
+    private static long s_changeStateWaitMS = 750;
     private static boolean s_writerInitialized = false;
     private static boolean s_running = false;
     private String hostName = "127.0.0.1";
@@ -337,7 +333,7 @@ public class WriteDataThread implements Runnable {
         data.put("state", "STREAMING");
         String image_data = null;
         Mat image_rgb = MainActivity.getImage();
-        if (image_data != null) {
+        if (image_rgb != null) {
             image_data = Base64.encodeToString(toByteArray(image_rgb), Base64.DEFAULT);
 //            String image_data = "wow-data!";
             data.put("image_rgb", image_data);
@@ -387,7 +383,6 @@ public class WriteDataThread implements Runnable {
         // Choose writing method based on write state
         switch (s_writeState) {
             case IDLE:
-                Log.e("WriteState Error", "Trying to write in idle write state");
                 break;
             case JSON:
                 writeJSON(json);
@@ -427,7 +422,7 @@ public class WriteDataThread implements Runnable {
     private void writeSocket(JSONObject json){
         try {
 //            Log.d("-----WriteSocket-----", "Opening socket on "+ s_hostName +":"+ s_RIOPort);
-            Socket socket = new Socket(s_hostName, s_RIOPort);
+            Socket socket = new Socket(Constants.kRIOHostName, Constants.kRIOPortNumber);
 //            Log.d("-----WriteSocket-----", "Socket Opened");
             OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
             out.write(json.toString());

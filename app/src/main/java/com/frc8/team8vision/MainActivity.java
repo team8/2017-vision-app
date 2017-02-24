@@ -150,7 +150,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             mCameraView.toggleFlashLight();
         }
-        //mCameraView.toggleFlashLight();
+        mCameraView.toggleFlashLight();
         WriteDataThread.getInstance().resume();
     }
 
@@ -366,13 +366,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public static Mat getImage() {
-        if (imageRGB != null && !imageRGB.empty()) {
-            Mat resized_rgb = new Mat();
-            Imgproc.resize(imageRGB, resized_rgb, new Size(320, 180));
-            return resized_rgb;
-        } else {
+        if (imageRGB.empty()) {
             return null;
         }
+        Mat resized_rgb = new Mat();
+        Imgproc.resize(imageRGB, resized_rgb, new Size(320, 180));
+        return resized_rgb;
     }
 
     public static double getTurnAngle() { return turnAngle; }

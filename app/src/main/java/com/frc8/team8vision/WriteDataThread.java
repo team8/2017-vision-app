@@ -50,7 +50,10 @@ import java.util.HashMap;
  * 				<li>{@link WriteDataThread#s_writerInitialized}: Private boolean representing whether the writer for
  * 			                                                        the current writing state has been initialized	</li>
  * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
+<<<<<<< Updated upstream
  * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
+=======
+>>>>>>> Stashed changes
  * 			</ul>
  * 		</li>
  * 	</ul>
@@ -133,8 +136,6 @@ public class WriteDataThread implements Runnable {
     private static long s_changeStateWaitMS = 750;
     private static boolean s_writerInitialized = false;
     private static boolean s_running = false;
-    private String hostName = "127.0.0.1";
-    private static final int RIOPort = 8008;
 
     /**
      * Creates a WriteDataThread instance

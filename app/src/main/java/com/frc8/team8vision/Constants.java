@@ -3,7 +3,7 @@ package com.frc8.team8vision;
 public class Constants {
 
     // roboRIO networking constants
-    public static final String kRIOHostName = "roboRIO-8-frc.local";
+    public static final String kRIOHostName = "localhost";
     public static final int kRIOPortNumber = 8008;
 
     // HSV threshold slider constants

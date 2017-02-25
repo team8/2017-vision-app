@@ -105,11 +105,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i("TEST ALVIN", "Activity Created");
 
         mCameraView = new SketchyCameraView(this, -1);
         setContentView(mCameraView);
         mCameraView.setCvCameraViewListener(this);
+        mCameraView.setMaxFrameSize(980,520);
 
         WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
     }
@@ -127,8 +127,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public void onResume() {
         super.onResume();
-
-        mCameraView.toggleFlashLight();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
     }
 
@@ -150,7 +148,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             mCameraView.toggleFlashLight();
         }
-        mCameraView.toggleFlashLight();
         WriteDataThread.getInstance().resume();
     }
 
@@ -366,7 +363,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public static Mat getImage() {
-        if (imageRGB.empty()) {
+        if (imageRGB == null || imageRGB.empty()) {
             return null;
         }
         Mat resized_rgb = new Mat();

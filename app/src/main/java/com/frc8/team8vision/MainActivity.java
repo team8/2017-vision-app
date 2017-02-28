@@ -45,12 +45,16 @@ import java.util.List;
 import java.util.Locale;
 
 import org.json.JSONObject;
+import org.opencv.objdetect.Objdetect;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "MainActivity";
 
     private static Mat imageRGB;
+    private static Mat imageRGB_raw;
+    // Lock for synchronized access of imageRGB
+    private final Object lock = new Object();
 
     private static double turnAngle = 0, xDist = 0;
     private static long cycleTime = 0;
@@ -109,13 +113,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mCameraView = new SketchyCameraView(this, -1);
         setContentView(mCameraView);
         mCameraView.setCvCameraViewListener(this);
-        mCameraView.setMaxFrameSize(980,520);
+        mCameraView.setMaxFrameSize(640,360);
 
-        WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
+        WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.BROADCAST_IDLE);
+        JSONStreamerThread.getInstance().start(this);
     }
 
     @Override
     public void onPause() {
+        JSONStreamerThread.getInstance().pause();
         WriteDataThread.getInstance().pause();
         super.onPause();
 
@@ -138,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             if (imageHSV != null) imageHSV.release();
         }
         WriteDataThread.getInstance().destroy();
+        JSONStreamerThread.getInstance().destroy();
     }
 
     @Override
@@ -151,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         
         mCameraView.toggleFlashLight();*/
         WriteDataThread.getInstance().resume();
+        JSONStreamerThread.getInstance().resume();
     }
 
     @Override
@@ -159,11 +167,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        imageRGB = inputFrame.rgba();
+        synchronized (lock) {
+            imageRGB_raw = inputFrame.rgba().clone();
+            imageRGB = inputFrame.rgba();
+            imageRGB = track(imageRGB);
+        }
 
-        imageRGB = track(imageRGB);
         imageHSV.release();
-
         return imageRGB;
     }
 
@@ -376,12 +386,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private boolean isGalaxy() { return Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP; }
 
     public static Mat getImage() {
-        if (imageRGB == null || imageRGB.empty()) {
-            return null;
-        }
-        Mat resized_rgb = new Mat();
-        Imgproc.resize(imageRGB, resized_rgb, new Size(320, 180));
-        return resized_rgb;
+       return imageRGB_raw;
     }
 
     public static double getTurnAngle() { return turnAngle; }

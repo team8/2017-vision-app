@@ -2,23 +2,15 @@ package com.frc8.team8vision;
 
 import android.app.Activity;
 import android.content.Context;
-import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.opencv.core.CvException;
 import org.opencv.core.Mat;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Serializable;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -34,26 +26,20 @@ import java.util.HashMap;
  * 		<li>Instance and State variables:
  * 			<ul>
  * 				<li>{@link WriteDataThread#s_instance} (Singleton): Private static instance of this class</li>
- * 				<li>{@link WriteDataThread#s_dataThreadState} (private): Current state of connection</li>
- * 			    <li>{@link WriteDataThread#s_lastThreadState} (private): Last connection state</li>
- * 			    <li>{@link WriteDataThread#s_writeState} (private): Current writing state</li>
- * 			    <li>{@link WriteDataThread#s_activity} (private): Activity hosting the thread</li>
+ * 				<li>{@link WriteDataThread#m_dataThreadState} (private): Current state of connection</li>
+ * 			    <li>{@link WriteDataThread#m_lastThreadState} (private): Last connection state</li>
+ * 			    <li>{@link WriteDataThread#m_writeState} (private): Current writing state</li>
+ * 			    <li>{@link WriteDataThread#m_activity} (private): Activity hosting the thread</li>
  * 				<li><b>See:</b>{@link DataThreadState}</li>
  * 			</ul>
  * 		</li>
  * 		<li>Utility variables:
  * 			<ul>
- * 				<li>{@link WriteDataThread#s_secondsAlive}: Private count of seconds the program has run for</li>
- * 				<li>{@link WriteDataThread#s_stateAliveTime}: Private count of seconds the state has run for</li>
- * 			    <li>{@link WriteDataThread#s_frameUpdateRateMS}: Private count of ms between frame updates</li>
- * 			    <li>{@link WriteDataThread#s_changeStateWaitMS}: Private count of ms to wait when switching states</li>
- * 				<li>{@link WriteDataThread#s_writerInitialized}: Private boolean representing whether the writer for
+ * 				<li>{@link WriteDataThread#m_secondsAlive}: Private count of seconds the program has run for</li>
+ * 				<li>{@link WriteDataThread#m_stateAliveTime}: Private count of seconds the state has run for</li>
+ * 				<li>{@link WriteDataThread#m_writerInitialized}: Private boolean representing whether the writer for
  * 			                                                        the current writing state has been initialized	</li>
- * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
-<<<<<<< Updated upstream
- * 				<li>{@link WriteDataThread#s_running}: Private boolean representing whether the thread is running</li>
-=======
->>>>>>> Stashed changes
+ * 				<li>{@link WriteDataThread#m_running}: Private boolean representing whether the thread is running</li>
  * 			</ul>
  * 		</li>
  * 	</ul>
@@ -79,7 +65,7 @@ import java.util.HashMap;
  * 	 <br><BLOCKQUOTE>Paired with external access functions. These compute the actual function for the external access</BLOCKQUOTE></h1>
  * 	 <ul>
  * 	     <li>{@link WriteDataThread#InitializeWriter()}</li>
- * 	     <li>{@link WriteDataThread#WriteMatImage()}</li>
+ * 	     <li>{@link WriteDataThread#WriteVisionData()}</li>
  * 	 </ul>
  *
  * Created by Alvin on 2/16/2017.
@@ -124,18 +110,16 @@ public class WriteDataThread implements Runnable {
 
     // Instance and state variables
     public static WriteDataThread s_instance;
-    private static DataThreadState s_dataThreadState = DataThreadState.PREINIT;
-    private static DataThreadState s_lastThreadState;
-    private static WriteState s_writeState = WriteState.IDLE;
-    private static Activity s_activity;
+    private DataThreadState m_dataThreadState = DataThreadState.PREINIT;
+    private DataThreadState m_lastThreadState;
+    private WriteState m_writeState = WriteState.IDLE;
+    private Activity m_activity;
 
     // Utility variables
-    private static double s_secondsAlive = 0;
-    private static double s_stateAliveTime = 0;
-    private static long s_frameUpdateRateMS = 100;
-    private static long s_changeStateWaitMS = 750;
-    private static boolean s_writerInitialized = false;
-    private static boolean s_running = false;
+    private double m_secondsAlive = 0;
+    private double m_stateAliveTime = 0;
+    private boolean m_writerInitialized = false;
+    private boolean m_running = false;
 
     /**
      * Creates a WriteDataThread instance
@@ -158,13 +142,13 @@ public class WriteDataThread implements Runnable {
      * @param state State to switch to
      */
     private void SetState(DataThreadState state){
-        if(!s_dataThreadState.equals(state)){
+        if(!m_dataThreadState.equals(state)){
             try {
-                Thread.sleep(s_changeStateWaitMS);
+                Thread.sleep(Constants.kChangeStateWaitMS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            s_dataThreadState = state;
+            m_dataThreadState = state;
         }
     }
 
@@ -173,11 +157,11 @@ public class WriteDataThread implements Runnable {
      * @param state State to switch to
      */
     private void SetWriteState(WriteState state){
-        if(s_writeState.equals(state)){
-            Log.w("WriteState Error:", "no change to write state");
+        if(m_writeState.equals(state)){
+            Log.w("SocketConnectionState Error:", "no change to write state");
         }else{
-            s_writeState = state;
-            s_writerInitialized = false;
+            m_writeState = state;
+            m_writerInitialized = false;
             this.SetState(DataThreadState.INITIALIZE_WRITER);
         }
     }
@@ -186,14 +170,14 @@ public class WriteDataThread implements Runnable {
      * (Debug) Logs the Thread state
      */
     private void logThreadState(){
-        Log.d("WriteDataThread State", "ThreadState: "+s_dataThreadState);
+        Log.d("WriteDataThread State", "ThreadState: "+m_dataThreadState);
     }
 
     /**
      * (DEBUG) Logs the Write state
      */
     private void logWriteState(){
-        Log.d("WriteState state", "WriteState: "+s_writeState);
+        Log.d("SocketConnectionState state", "SocketConnectionState: "+m_writeState);
     }
 
     /**
@@ -208,51 +192,48 @@ public class WriteDataThread implements Runnable {
             return;
         }
 
-        if(!s_dataThreadState.equals(DataThreadState.PREINIT)){
+        if(!m_dataThreadState.equals(DataThreadState.PREINIT)){
             Log.e("WriteDataThread Error", "Thread has already been initialized");
             this.logThreadState();
         }
 
-        if(!s_writeState.equals(WriteState.IDLE)){
-            Log.e("WriteState Error", "Already in a writing state");
+        if(!m_writeState.equals(WriteState.IDLE)){
+            Log.e("SocketConnectionState Error", "Already in a writing state");
             this.logWriteState();
         }
 
-        if(s_running){
+        if(m_running){
             Log.e("WriteDataThread Error", "Thread is already running");
             return;
         }
-        s_activity = activity;
-        s_running = true;
+        m_activity = activity;
+        m_running = true;
 
         // This line doesn't do anything, just prepares for changing the write state in resume()
-        s_writeState = writeState;
+        m_writeState = writeState;
     }
 
     /**
-<<<<<<< HEAD
      * On receiving broadcast intent, send data
      */
     public void SendBroadcast(){
-        if(!s_writeState.equals(WriteState.BROADCAST_IDLE)){
-            Log.e("WriteState Error", "Trying to send broadcast when thread is not waiting to send");
+        if(!m_writeState.equals(WriteState.BROADCAST_IDLE)){
+            Log.e("SocketConnectionState Error", "Trying to send broadcast when thread is not waiting to send");
         }else{
-            s_writeState = WriteState.BROADCAST;
+            m_writeState = WriteState.BROADCAST;
         }
     }
 
     /**
-=======
->>>>>>> Alvin On 2-16-17: Added a thread to write data (currently only via JSON
      * Pauses the Thread
      * <br>Called when the program pauses/releases the Camera
      */
     public void pause(){
-        if(!s_running){
+        if(!m_running){
             Log.e("WriteDataThread Error", "Thread is not running");
         }
 
-        s_lastThreadState = s_dataThreadState;
+        m_lastThreadState = m_dataThreadState;
         this.SetState(DataThreadState.PAUSED);
     }
 
@@ -275,11 +256,11 @@ public class WriteDataThread implements Runnable {
      * </ul>
      */
     public void resume(){
-        if(s_dataThreadState.equals(DataThreadState.PAUSED)){   // If paused, continue from where we left off
-            this.SetState(s_lastThreadState);
-        }else if(s_dataThreadState.equals(DataThreadState.PREINIT)){  // If thread is initializing, finish initialization
-            WriteState newState = s_writeState;
-            s_writeState = WriteState.IDLE;
+        if(m_dataThreadState.equals(DataThreadState.PAUSED)){   // If paused, continue from where we left off
+            this.SetState(m_lastThreadState);
+        }else if(m_dataThreadState.equals(DataThreadState.PREINIT)){  // If thread is initializing, finish initialization
+            WriteState newState = m_writeState;
+            m_writeState = WriteState.IDLE;
             this.SetWriteState(newState);
 
             Log.i("WriteDataThread Thread", "Starting Thread: WriteDataThread");
@@ -299,7 +280,7 @@ public class WriteDataThread implements Runnable {
      *           re-opening the app
      */
     public void destroy(){
-        s_running = false;
+        m_running = false;
         this.SetWriteState(WriteState.IDLE);
         this.SetState(DataThreadState.PREINIT);
         this.writeState("TERMINATED");
@@ -311,15 +292,15 @@ public class WriteDataThread implements Runnable {
      */
     private DataThreadState InitializeWriter(){
         // FOR METHODS OTHER THAN JSON WRITING, EDIT
-        switch (s_writeState){
+        switch (m_writeState){
             case IDLE:
-                Log.e("WriteState Error", "Trying to initialize an idle writer...");
+                Log.e("SocketConnectionState Error", "Trying to initialize an idle writer...");
                 return DataThreadState.INITIALIZE_WRITER;
             case JSON:
-                Log.i("WriteState Info", "Initalizing JSON writer");
+                Log.i("SocketConnectionState Info", "Initalizing JSON writer");
                 break;  // Nothing to do for JSON mode
             case BROADCAST:
-                Log.i("WriteState Info", "Initializing Broadcast writer");
+                Log.i("SocketConnectionState Info", "Initializing Broadcast writer");
                 break;
         }
         return DataThreadState.WRITING;
@@ -329,19 +310,13 @@ public class WriteDataThread implements Runnable {
      * Writes matrix data to JSON file
      * @return The state after execution
      */
-    private DataThreadState WriteMatImage(){
+    private DataThreadState WriteVisionData(){
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("state", "STREAMING");
-        String image_data = null;
-        Mat image_rgb = MainActivity.getImage();
-        if (image_rgb != null) {
-            image_data = Base64.encodeToString(toByteArray(image_rgb), Base64.DEFAULT);
-//            String image_data = "wow-data!";
-            data.put("image_rgb", image_data);
-            writeData(data);
-        }
+        data.put("x_displacement", MainActivity.getXDisplacement());
+        writeData(data);
 
-        return s_dataThreadState;
+        return m_dataThreadState;
     }
 
     /**
@@ -382,7 +357,7 @@ public class WriteDataThread implements Runnable {
         }
 
         // Choose writing method based on write state
-        switch (s_writeState) {
+        switch (m_writeState) {
             case IDLE:
                 break;
             case JSON:
@@ -390,7 +365,7 @@ public class WriteDataThread implements Runnable {
                 break;
             case BROADCAST:
                 writeSocket(json);
-                s_writeState = WriteState.BROADCAST_IDLE;
+                m_writeState = WriteState.BROADCAST_IDLE;
                 break;
             case BROADCAST_IDLE:
                 // Do nothing, wait until broadcast is sent
@@ -408,7 +383,7 @@ public class WriteDataThread implements Runnable {
      */
     private void writeJSON(JSONObject json){
         try{
-            OutputStreamWriter osw = new OutputStreamWriter(s_activity.openFileOutput("data.json", Context.MODE_PRIVATE));
+            OutputStreamWriter osw = new OutputStreamWriter(m_activity.openFileOutput("data.json", Context.MODE_PRIVATE));
             osw.write(json.toString());
             osw.close();
         } catch (IOException e){
@@ -422,8 +397,8 @@ public class WriteDataThread implements Runnable {
      */
     private void writeSocket(JSONObject json){
         try {
-//            Log.d("-----WriteSocket-----", "Opening socket on "+ s_hostName +":"+ s_RIOPort);
-            Socket socket = new Socket(Constants.kRIOHostName, Constants.kRIOPortNumber);
+//            Log.d("-----WriteSocket-----", "Opening socket on "+ m_hostName +":"+ m_RIOPort);
+            Socket socket = new Socket(Constants.kRIOHostName, Constants.kDataPortNumber);
 //            Log.d("-----WriteSocket-----", "Socket Opened");
             OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
             out.write(json.toString());
@@ -447,13 +422,13 @@ public class WriteDataThread implements Runnable {
     }
 
     /**
-     * Updates the thread at {@link WriteDataThread#s_frameUpdateRateMS} ms
+     * Updates the thread at {@link Constants#kVisionUpdateRateMS} ms
      */
     @Override
     public void run() {
-        while(s_running){
-            DataThreadState initState = s_dataThreadState;
-            switch (s_dataThreadState){
+        while(m_running){
+            DataThreadState initState = m_dataThreadState;
+            switch (m_dataThreadState){
 
                 case PREINIT:   // This should never happen
                     Log.e("WriteDataThread Error", "Thread running, but has not been initialized");
@@ -465,7 +440,7 @@ public class WriteDataThread implements Runnable {
                     break;
 
                 case WRITING:
-                    this.SetState(this.WriteMatImage());
+                    this.SetState(this.WriteVisionData());
                     break;
 
                 case PAUSED:
@@ -475,14 +450,14 @@ public class WriteDataThread implements Runnable {
             }
 
             // Reset state start time if state changed
-            if(!initState.equals(s_dataThreadState)){
-                s_stateAliveTime = s_secondsAlive;
+            if(!initState.equals(m_dataThreadState)){
+                m_stateAliveTime = m_secondsAlive;
             }
 
             // Handle thread sleeping, sleep for set time delay
             try{
-                Thread.sleep(s_frameUpdateRateMS);
-                s_secondsAlive += s_frameUpdateRateMS/1000.0;
+                Thread.sleep(Constants.kVisionUpdateRateMS);
+                m_secondsAlive += Constants.kVisionUpdateRateMS /1000.0;
             }catch (InterruptedException e){
                 e.printStackTrace();
             }

@@ -17,7 +17,7 @@ public class RequestReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
-            Log.i("RequestReceiver", "Received request to send data");
+//            Log.i("RequestReceiver", "Received request to send data");
             WriteDataThread.getInstance().SendBroadcast();
         } catch (Exception e) {
             e.printStackTrace();

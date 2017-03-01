@@ -155,7 +155,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         /*if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
             mCameraView.toggleFlashLight();
         }
+<<<<<<< HEAD
         
+=======
+>>>>>>> master
         mCameraView.toggleFlashLight();*/
         WriteDataThread.getInstance().resume();
         JSONStreamerThread.getInstance().resume();

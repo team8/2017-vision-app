@@ -13,13 +13,21 @@ public class Constants {
     public static final String[] kSliderNames = {"Minimum Hue", "Minimum Saturation", "Minimum Value",
                                                  "Maximum Hue", "Maximum Saturation", "Maximum Value"};
 
+    // Physical specs of peg (all measurements are in inches)
+    public static final double kVisionTargetWidth = 10.25, kVisionTargetHeight = 5.0, kPegLength = 10.5;
+
     // Camera calibration constants
-    public static final double kGalaxyFocalLengthX = 6513.75410, kGalaxyFocalLengthY = 6448.76817;
+
+    // Galaxy S4
+    public static final int kGalaxyPixelsPerInch = 441;
+    public static final double kGalaxyFocalLengthX = 6513.75410, kGalaxyFocalLengthY = 6448.76817, kGalaxyFocalLengthZ = 527;
     public static final double[][] kGalaxyIntrinsicMatrix = {{kGalaxyFocalLengthX, 0,                   0},
                                                              {0,                   kGalaxyFocalLengthY, 0},
                                                              {0,                   0,                   1}};
     public static final double[] kGalaxyDistortionCoefficients = {.462497044, -1.63724827, -.00256097258, .00220231323};
 
+    // Nexus 5x
+    public static final int kNexusPixelsPerInch = 424;
     public static final double kNexusFocalLengthX = 2004.00956, kNexusFocalLengthY = 2000.42830;
     public static final double[][] kNexusIntrinsicMatrix = {{kNexusFocalLengthX, 0,                  0},
                                                             {0,                  kNexusFocalLengthY, 0},

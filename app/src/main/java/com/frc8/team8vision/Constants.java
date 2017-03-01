@@ -25,7 +25,7 @@ public class Constants {
 
     // Galaxy S4
     public static final int kGalaxyPixelsPerInch = 441;
-    public static final double kGalaxyFocalLengthX = 6513.75410, kGalaxyFocalLengthY = 6448.76817;
+    public static final double kGalaxyFocalLengthX = 6513.75410, kGalaxyFocalLengthY = 6448.76817, kGalaxyFocalLengthZ = 527;
     public static final double[][] kGalaxyIntrinsicMatrix = {{kGalaxyFocalLengthX, 0,                   0},
                                                              {0,                   kGalaxyFocalLengthY, 0},
                                                              {0,                   0,                   1}};

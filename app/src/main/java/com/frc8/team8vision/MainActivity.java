@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private long lastCycleTimestamp = 0;
 
-    private int mWidth = 0, mHeight = 0;
+    private int mWidth = 0, mHeight = 0, mPPI = 0;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -89,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                             }
                         }
                         distCoeffs.fromArray(Constants.kGalaxyDistortionCoefficients);
+                        mPPI = Constants.kGalaxyPixelsPerInch;
                     } else {
                         // Nexus 5x is being used
                         for (int i = 0; i < 3; i++) {
@@ -97,6 +98,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                             }
                         }
                         distCoeffs.fromArray(Constants.kNexusDistortionCoefficients);
+                        mPPI = Constants.kNexusPixelsPerInch;
                     }
                 } break;
                 default: {
@@ -152,14 +154,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mWidth = width;
         mHeight = height;
         mCameraView.setParameters();
-        /*if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
-            mCameraView.toggleFlashLight();
-        }
-<<<<<<< HEAD
-        
-=======
->>>>>>> master
-        mCameraView.toggleFlashLight();*/
+
+        mCameraView.toggleFlashLight();
+
         WriteDataThread.getInstance().resume();
         JSONStreamerThread.getInstance().resume();
     }
@@ -173,6 +170,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         synchronized (lock) {
             imageRGB_raw = inputFrame.rgba().clone();
             imageRGB = inputFrame.rgba();
+			if (isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Galaxy camera feed is inverted
             imageRGB = track(imageRGB);
         }
 
@@ -218,21 +216,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 return 0;
             }
         });
-        List<MatOfPoint> largestTwo = new ArrayList<>();
-        largestTwo.add(contours.get(0));
-        if (contours.size() > 1) largestTwo.add(contours.get(1));
-
-        // Combine largest two contours
-        MatOfPoint combined = new MatOfPoint();
-        if (largestTwo.size() == 2) {
-            MatOfPoint first = largestTwo.get(0), second = largestTwo.get(1);
-            combined = concat(contours);
-            //combined = first;
-        }
 
         //Track corners of combined contour
         Point[] corners;
-        if ((corners = getCorners(combined)) != null) {
+        if ((corners = getCorners(contours)) != null) {
             Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                     new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
 
@@ -258,29 +245,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return input;
     }
 
-    public MatOfPoint concat(List<MatOfPoint> contours) {
-        int sizeThreshold = 50;
-
-        List<Point> points = new ArrayList<>();
+    public Point[] getCorners(List<MatOfPoint> contours) {
+        List<Point>  combined = new ArrayList<>();
         for (MatOfPoint contour : contours) {
-            if (Imgproc.contourArea(contour) < sizeThreshold) continue;
-            List<Point> contourList = contour.toList();
-            points.addAll(contourList);
-        }
-        MatOfPoint retval = new MatOfPoint();
-        retval.fromList(points);
-        return retval;
-    }
-
-    public Point[] getCorners(MatOfPoint contour) {
-        if (contour == null) {
-            Log.d(TAG, "Contour is null");
-            return null;
+            combined.addAll(contour.toList());
         }
         Point[] corners = new Point[4];
-        Point[] array = contour.toArray();
+        Point[] array = combined.toArray(new Point[0]);
         if (array.length == 0) {
-//            Log.d(TAG, "Empty array");
+            Log.d(TAG, "Empty array");
             return null;
         }
         Arrays.sort(array, new Comparator<Point>() {
@@ -289,37 +262,36 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 return (int)((o1.y - o1.x) - (o2.y - o2.x));
             }
         });
-        corners[3] = array[0];
-        corners[0] = array[array.length - 1];
+        corners[1] = array[0];
+        corners[3] = array[array.length - 1];
         Arrays.sort(array, new Comparator<Point>() {
             @Override
             public int compare(Point o1, Point o2) {
                 return (int)((o1.y + o1.x) - (o2.y + o2.x));
             }
         });
-        corners[2] = array[0];
-        corners[1] = array[array.length - 1];
+        corners[0] = array[0];
+        corners[2] = array[array.length - 1];
 
         return corners;
     }
 
     public void getPosePnP(Point[] src, Mat input) {
-        double dist = 0, scalar = 100, width = Constants.kVisionTargetWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
-        double x = 10.25 * scalar, y = 5 * scalar;
-        double leftX = mWidth/2 - width/2, topY = mHeight/2 - height/2, rightX = leftX + width, bottomY = topY + height, z = dist - 2 * scalar;
+        double dist = 0, scalar = 0.2, width = Constants.kVisionTargetWidth * mPPI * scalar, height = Constants.kVisionTargetHeight * mPPI * scalar;
+        double leftX = 0, topY = 0, rightX = width, bottomY = height, z = dist - 2 * mPPI * scalar;
 
+        Imgproc.rectangle(input, new Point(leftX, topY), new Point(rightX, bottomY), new Scalar(255, 255, 255));
         //src = new Point[]{new Point(0, 500), new Point(1025, 500), new Point(0, 0), new Point(1025, 0)};
         Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                 new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
         MatOfPoint2f dstPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, bottomY, dist), new Point3(rightX, bottomY, dist),
-                new Point3(leftX, topY, dist), new Point3(rightX, topY, dist));
-        Imgproc.rectangle(input, new Point(leftX, topY), new Point(rightX, bottomY), new Scalar(255, 255, 255));
+        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, dist), new Point3(rightX, topY, dist),
+                new Point3(rightX, bottomY, dist), new Point3(leftX, bottomY, dist));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
         MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(leftX, topY, 0), new Point3(rightX, topY, 0), new Point3(rightX, bottomY, 0), new Point3(leftX, bottomY, 0),
                                                     new Point3(leftX, topY, z), new Point3(rightX, topY, z), new Point3(rightX, bottomY, z), new Point3(leftX, bottomY, z),
-                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar));
+                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * mPPI));
        /* MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(0, y, dist), new Point3(x, y, dist),
                 new Point3(0, 0, dist), new Point3(x, 0, dist));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
@@ -336,7 +308,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5);
         }
         Imgproc.circle(input, arr[8], 10, new Scalar(255, 255, 255), -1);
-        xDist = (arr[8].x - (mWidth/2)) / ((isGalaxy()) ? Constants.kGalaxyPixelsPerInch : Constants.kNexusPixelsPerInch);
+        Log.d(TAG, tvecs.size().toString());
+        xDist = tvecs.get(0, 0)[0] / mPPI;
         /*Point3[] newSrc = new Point3[4];
         for (int i = 0; i < 4; i++) newSrc[i] = new Point3(src[i].x, src[i].y, 500);
         srcPoints = new MatOfPoint3f();
@@ -346,33 +319,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         double[] angles = rvecs.toArray();
         turnAngle = Math.toDegrees(angles[1]);
     }
-
-    public double getYaw(Mat rotationMatrix) {
-        double theta1, theta2, theta3, s1, c1, c2;
-        theta1 = Math.atan2(rotationMatrix.get(1,2)[0], rotationMatrix.get(2,2)[0]);
-        c2 = Math.sqrt(rotationMatrix.get(0,0)[0] * rotationMatrix.get(0,0)[0] + rotationMatrix.get(0,1)[0] * rotationMatrix.get(0,1)[0]);
-        theta2 = Math.atan2(-rotationMatrix.get(0,2)[0], c2);
-        s1 = Math.sin(theta1);
-        c1 = Math.cos(theta1);
-        theta3 = Math.atan2(s1 * rotationMatrix.get(2,0)[0] - c2 * rotationMatrix.get(1,0)[0], c1 * rotationMatrix.get(1,1)[0] - s1 * rotationMatrix.get(2,1)[0]);
-        return Math.toDegrees(theta1);
-    }
-
-///*    public void verifyYaw() {
-//        for (int i = 0; i < 3; i++) {
-//            for (int j = 0; j < 3; j++) {
-//                xMat.put(i, j, xArr[i][j]);
-//                yMat.put(i, j, yArr[i][j]);
-//                zMat.put(i, j, zArr[i][j]);
-//            }
-//        }
-//        Mat rotMatrix = new Mat(3, 3, CvType.CV_64F), temp = new Mat(3, 3, CvType.CV_64F);
-//        Log.d(TAG, String.format(Locale.getDefault(), "%s\n%s\n%s", zMat.get(0, 0, new double[0]), yMat, xMat));
-//        Core.multiply(zMat, yMat, temp);
-//        Core.multiply(temp, xMat, rotMatrix);
-//        Log.d(TAG, rotMatrix.toString());
-//        if (z != getYaw(rotMatrix)) Log.d(TAG, "You failed");
-//    }*/
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -397,10 +343,4 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public static double getXDisplacement() { return xDist; }
 
     public static long getCycleTime() { return cycleTime; }
-
-    public int dpToPx(float dp) {
-        DisplayMetrics displayMetrics = getBaseContext().getResources().getDisplayMetrics();
-        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-    }
-
 }

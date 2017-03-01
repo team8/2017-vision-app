@@ -147,7 +147,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mWidth = width;
         mHeight = height;
         mCameraView.setParameters();
+
         mCameraView.toggleFlashLight();
+
         WriteDataThread.getInstance().resume();
     }
 

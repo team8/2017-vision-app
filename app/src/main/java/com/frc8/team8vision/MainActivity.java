@@ -1,21 +1,16 @@
 package com.frc8.team8vision;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.widget.Toast;
 
-import org.json.JSONException;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
@@ -31,21 +26,14 @@ import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
-import org.json.JSONObject;
-import org.opencv.objdetect.Objdetect;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -56,18 +44,21 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     // Lock for synchronized access of imageRGB
     private final Object lock = new Object();
 
-    private static double turnAngle = 0, xDist = 0;
+    private static double turnAngle = 0, xDist = 0, yDist = 0, zDist = 0;
     private static long cycleTime = 0;
 
     private MatOfDouble distCoeffs;
 
     private Mat intrinsicMatrix, imageHSV;
 
-    private SketchyCameraView mCameraView;
+    private static SketchyCameraView mCameraView;
 
     private long lastCycleTimestamp = 0;
 
     private int mWidth = 0, mHeight = 0, mPPI = 0;
+    private int mResolutionFactor = 3;      // Divides screen images by given factor
+	double fontSize = 2.0/mResolutionFactor;
+	int fontThickness = (int) Math.ceil(3.0/mResolutionFactor);
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -115,15 +106,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mCameraView = new SketchyCameraView(this, -1);
         setContentView(mCameraView);
         mCameraView.setCvCameraViewListener(this);
-        mCameraView.setMaxFrameSize(640,360);
+        mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
 
         WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.BROADCAST_IDLE);
-        JSONStreamerThread.getInstance().start(this);
+        JPEGStreamerThread.getInstance().start(this);
     }
 
     @Override
     public void onPause() {
-        JSONStreamerThread.getInstance().pause();
+        JPEGStreamerThread.getInstance().pause();
         WriteDataThread.getInstance().pause();
         super.onPause();
 
@@ -146,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             if (imageHSV != null) imageHSV.release();
         }
         WriteDataThread.getInstance().destroy();
-        JSONStreamerThread.getInstance().destroy();
+        JPEGStreamerThread.getInstance().destroy();
     }
 
     @Override
@@ -155,10 +146,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mHeight = height;
         mCameraView.setParameters();
 
-        mCameraView.toggleFlashLight();
+//        mCameraView.toggleFlashLight();
 
         WriteDataThread.getInstance().resume();
-        JSONStreamerThread.getInstance().resume();
+        JPEGStreamerThread.getInstance().resume();
     }
 
     @Override
@@ -169,6 +160,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         synchronized (lock) {
             imageRGB_raw = inputFrame.rgba().clone();
+			Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
             imageRGB = inputFrame.rgba();
 			if (isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Galaxy camera feed is inverted
             imageRGB = track(imageRGB);
@@ -217,6 +209,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
         });
 
+		MatOfPoint cont1 = contours.get(0);
+		MatOfPoint cont2 = contours.get(0);
+		contours = new ArrayList<>();
+
+		contours.add(cont1); contours.add(cont2);
+
         //Track corners of combined contour
         Point[] corners;
         if ((corners = getCorners(contours)) != null) {
@@ -231,16 +229,20 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             getPosePnP(corners, input);
 
             Imgproc.putText(input,
-                    String.format(Locale.getDefault(), "%.2f",
-                    xDist), new Point(0, mHeight - 30),
-                    Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
+                    String.format(Locale.getDefault(), "%.2f", xDist) + ", " +
+                    String.format(Locale.getDefault(), "%.2f", yDist) + ", " +
+                    String.format(Locale.getDefault(), "%.2f", zDist),
+					new Point(0, mHeight - 30/(float)mResolutionFactor),
+                    Core.FONT_HERSHEY_SIMPLEX, fontSize, new Scalar(0, 255, 0), fontThickness);
+
         }
 
         Imgproc.drawContours(input, contours, -1, new Scalar(0, 255, 0), 2);
 
         Imgproc.putText(input,
-                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
-                Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
+                Double.toString(cycleTime),
+				new Point(mWidth - 200/(float)mResolutionFactor, mHeight - 30/(float)mResolutionFactor),
+                Core.FONT_HERSHEY_SIMPLEX, fontSize, new Scalar(0, 255, 0), fontThickness);
 
         return input;
     }
@@ -277,10 +279,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public void getPosePnP(Point[] src, Mat input) {
-        double dist = 0, scalar = 0.2, width = Constants.kVisionTargetWidth * mPPI * scalar, height = Constants.kVisionTargetHeight * mPPI * scalar;
+        double dist = 0, scalar = 1, width = Constants.kVisionTargetWidth * mPPI * scalar, height = Constants.kVisionTargetHeight * mPPI * scalar;
         double leftX = 0, topY = 0, rightX = width, bottomY = height, z = dist - 2 * mPPI * scalar;
 
-        Imgproc.rectangle(input, new Point(leftX, topY), new Point(rightX, bottomY), new Scalar(255, 255, 255));
+        Imgproc.rectangle(input, new Point(leftX/mResolutionFactor, topY/mResolutionFactor),
+				new Point(rightX/mResolutionFactor, bottomY/mResolutionFactor), new Scalar(255, 255, 255), fontThickness);
         //src = new Point[]{new Point(0, 500), new Point(1025, 500), new Point(0, 0), new Point(1025, 0)};
         Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
                 new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
@@ -303,13 +306,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Point[] arr = result.toArray();
         Scalar red = new Scalar(255, 0, 0);
         for (int i = 0; i < 4; i++) {
-            Imgproc.line(input, arr[i], arr[(i+1) % 4], red, 5);
-            Imgproc.line(input, arr[i], arr[i+4], red, 5);
-            Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5);
+//            Imgproc.line(input, arr[i], arr[(i+1) % 4], red, 5/mResolutionFactor);
+//            Imgproc.line(input, arr[i], arr[i+4], red, 5/mResolutionFactor);
+//            Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5/mResolutionFactor);
         }
         Imgproc.circle(input, arr[8], 10, new Scalar(255, 255, 255), -1);
         Log.d(TAG, tvecs.size().toString());
         xDist = tvecs.get(0, 0)[0] / mPPI;
+		yDist = tvecs.get(1, 0)[0] / mPPI;
+		zDist = tvecs.get(2, 0)[0] / mPPI;
         /*Point3[] newSrc = new Point3[4];
         for (int i = 0; i < 4; i++) newSrc[i] = new Point3(src[i].x, src[i].y, 500);
         srcPoints = new MatOfPoint3f();
@@ -343,4 +348,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public static double getXDisplacement() { return xDist; }
 
     public static long getCycleTime() { return cycleTime; }
+
+    public static void toggleFlash() {
+		mCameraView.toggleFlashLight();
+	}
 }

@@ -7,7 +7,7 @@ public class Constants {
     public static final int kDataPortNumber = 8008;
     public static final int kVisionPortNumber = 8009;
     public static final long kDataUpdateRateMS = 100;
-    public static final long kVisionUpdateRateMS = 16;
+    public static final long kVisionUpdateRateMS = 10;
     public static final long kChangeStateWaitMS = 200;
     public static final long kVisionIdleTimeS = 5;
 
@@ -32,7 +32,8 @@ public class Constants {
     public static final double[] kGalaxyDistortionCoefficients = {.462497044, -1.63724827, -.00256097258, .00220231323};
 
     // Nexus 5x
-    public static final int kNexusPixelsPerInch = 424;
+//    public static final int kNexusPixelsPerInch = 424;
+	public static final int kNexusPixelsPerInch = 10770;
     public static final double kNexusFocalLengthX = 2004.00956, kNexusFocalLengthY = 2000.42830;
     public static final double[][] kNexusIntrinsicMatrix = {{kNexusFocalLengthX, 0,                  0},
                                                             {0,                  kNexusFocalLengthY, 0},

@@ -158,7 +158,7 @@ public class WriteDataThread implements Runnable {
      */
     private void SetWriteState(WriteState state){
         if(m_writeState.equals(state)){
-            Log.w("SocketConnectionState Error:", "no change to write state");
+            Log.w("SocketConnection Error:", "no change to write state");
         }else{
             m_writeState = state;
             m_writerInitialized = false;
@@ -177,7 +177,7 @@ public class WriteDataThread implements Runnable {
      * (DEBUG) Logs the Write state
      */
     private void logWriteState(){
-        Log.d("SocketConnectionState state", "SocketConnectionState: "+m_writeState);
+        Log.d("SocketConnection state", "SocketConnectionState: "+m_writeState);
     }
 
     /**
@@ -198,7 +198,7 @@ public class WriteDataThread implements Runnable {
         }
 
         if(!m_writeState.equals(WriteState.IDLE)){
-            Log.e("SocketConnectionState Error", "Already in a writing state");
+            Log.e("SocketConnection Error", "Already in a writing state");
             this.logWriteState();
         }
 
@@ -218,7 +218,7 @@ public class WriteDataThread implements Runnable {
      */
     public void SendBroadcast(){
         if(!m_writeState.equals(WriteState.BROADCAST_IDLE)){
-            Log.e("SocketConnectionState Error", "Trying to send broadcast when thread is not waiting to send");
+            Log.e("SocketConnection Error", "Trying to send broadcast when thread is not waiting to send");
         }else{
             m_writeState = WriteState.BROADCAST;
         }
@@ -294,13 +294,13 @@ public class WriteDataThread implements Runnable {
         // FOR METHODS OTHER THAN JSON WRITING, EDIT
         switch (m_writeState){
             case IDLE:
-                Log.e("SocketConnectionState Error", "Trying to initialize an idle writer...");
+                Log.e("SocketConnection Error", "Trying to initialize an idle writer...");
                 return DataThreadState.INITIALIZE_WRITER;
             case JSON:
-                Log.i("SocketConnectionState Info", "Initalizing JSON writer");
+                Log.i("SocketConnection Info", "Initalizing JSON writer");
                 break;  // Nothing to do for JSON mode
             case BROADCAST:
-                Log.i("SocketConnectionState Info", "Initializing Broadcast writer");
+                Log.i("SocketConnection Info", "Initializing Broadcast writer");
                 break;
         }
         return DataThreadState.WRITING;
@@ -456,8 +456,8 @@ public class WriteDataThread implements Runnable {
 
             // Handle thread sleeping, sleep for set time delay
             try{
-                Thread.sleep(Constants.kVisionUpdateRateMS);
-                m_secondsAlive += Constants.kVisionUpdateRateMS /1000.0;
+                Thread.sleep(Constants.kDataUpdateRateMS);
+                m_secondsAlive += Constants.kDataUpdateRateMS /1000.0;
             }catch (InterruptedException e){
                 e.printStackTrace();
             }

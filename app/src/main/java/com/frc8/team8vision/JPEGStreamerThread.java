@@ -5,8 +5,6 @@ import android.util.Log;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.imgcodecs.Imgcodecs;
 
 import java.io.DataOutputStream;
@@ -24,46 +22,46 @@ import java.net.Socket;
  * 	<ul>
  * 		<li>Instance and State variables:
  * 			<ul>
- * 				<li>{@link JSONStreamerThread#s_instance} (Singleton): Private static instance of this class</li>
- * 				<li>{@link JSONStreamerThread#m_streamerThreadState} (private): Current state of connection</li>
- * 			    <li>{@link JSONStreamerThread#m_lastThreadState} (private): Last connection state</li>
- * 			    <li>{@link JSONStreamerThread#m_socketConnectionState} (private): Current writing state</li>
- * 			    <li>{@link JSONStreamerThread#m_activity} (private): Activity hosting the thread</li>
+ * 				<li>{@link JPEGStreamerThread#s_instance} (Singleton): Private static instance of this class</li>
+ * 				<li>{@link JPEGStreamerThread#m_streamerThreadState} (private): Current state of connection</li>
+ * 			    <li>{@link JPEGStreamerThread#m_lastThreadState} (private): Last connection state</li>
+ * 			    <li>{@link JPEGStreamerThread#m_socketConnectionState} (private): Current writing state</li>
+ * 			    <li>{@link JPEGStreamerThread#m_activity} (private): Activity hosting the thread</li>
  * 				<li><b>See:</b>{@link StreamerThreadState}</li>
  * 			</ul>
  * 		</li>
  * 		<li>Utility variables:
  * 			<ul>
- * 				<li>{@link JSONStreamerThread#m_secondsAlive}: Private count of seconds the program has run for</li>
- * 				<li>{@link JSONStreamerThread#m_stateAliveTime}: Private count of seconds the state has run for</li>
- * 				<li>{@link JSONStreamerThread#m_writerInitialized}: Private boolean representing whether the writer for
+ * 				<li>{@link JPEGStreamerThread#m_secondsAlive}: Private count of seconds the program has run for</li>
+ * 				<li>{@link JPEGStreamerThread#m_stateAliveTime}: Private count of seconds the state has run for</li>
+ * 				<li>{@link JPEGStreamerThread#m_writerInitialized}: Private boolean representing whether the writer for
  * 			                                                        the current writing state has been initialized	</li>
- * 				<li>{@link JSONStreamerThread#m_running}: Private boolean representing whether the thread is running</li>
+ * 				<li>{@link JPEGStreamerThread#m_running}: Private boolean representing whether the thread is running</li>
  * 			</ul>
  * 		</li>
  * 	</ul>
  *
  * <h1><b>Accessors and Mutators</b></h1>
  * 	<ul>
- * 		<li>{@link JSONStreamerThread#getInstance()}</li>
- * 		<li>{@link JSONStreamerThread#SetState(StreamerThreadState)}</li>
- * 		<li>{@link JSONStreamerThread#SetConnectionState(SocketConnectionState)}</li>
+ * 		<li>{@link JPEGStreamerThread#getInstance()}</li>
+ * 		<li>{@link JPEGStreamerThread#SetState(StreamerThreadState)}</li>
+ * 		<li>{@link JPEGStreamerThread#SetConnectionState(SocketConnectionState)}</li>
  * 	</ul>
  *
  * <h1><b>External Access Functions</b>
  * 	<br><BLOCKQUOTE>For using as a wrapper for RIOdroid</BLOCKQUOTE></h1>
  * 	<ul>
- * 		<li>{@link JSONStreamerThread#start(Activity)}</li>
- * 		<li>{@link JSONStreamerThread#pause()}</li>
- * 		<li>{@link JSONStreamerThread#resume()}</li>
- * 		<li>{@link JSONStreamerThread#destroy()}</li>
+ * 		<li>{@link JPEGStreamerThread#start(Activity)}</li>
+ * 		<li>{@link JPEGStreamerThread#pause()}</li>
+ * 		<li>{@link JPEGStreamerThread#resume()}</li>
+ * 		<li>{@link JPEGStreamerThread#destroy()}</li>
  * 	</ul>
  *
  * 	<h1><b>Internal Functions</b>
  * 	 <br><BLOCKQUOTE>Paired with external access functions. These compute the actual function for the external access</BLOCKQUOTE></h1>
  * 	 <ul>
- * 	     <li>{@link JSONStreamerThread#InitializeWriter()}</li>
- * 	     <li>{@link JSONStreamerThread#WriteImageData()}</li>
+ * 	     <li>{@link JPEGStreamerThread#InitializeWriter()}</li>
+ * 	     <li>{@link JPEGStreamerThread#WriteImageData()}</li>
  * 	 </ul>
  *
  * Created by Alvin on 2/16/2017.
@@ -75,7 +73,7 @@ import java.net.Socket;
  * @author Alvin
  */
 
-public class JSONStreamerThread implements Runnable {
+public class JPEGStreamerThread implements Runnable {
 
 	/**
 	 *  State of the thread controlling the writer
@@ -105,7 +103,7 @@ public class JSONStreamerThread implements Runnable {
 	}
 
 	// Instance and state variables
-	public static JSONStreamerThread s_instance;
+	public static JPEGStreamerThread s_instance;
 	private StreamerThreadState m_streamerThreadState = StreamerThreadState.PREINIT;
 	private StreamerThreadState m_lastThreadState;
 	private SocketConnectionState m_socketConnectionState = SocketConnectionState.CLOSED;
@@ -120,17 +118,17 @@ public class JSONStreamerThread implements Runnable {
 	private boolean m_running = false;
 
 	/**
-	 * Creates a JSONStreamerThread instance
+	 * Creates a JPEGStreamerThread instance
 	 * Cannot be called outside as a Singleton
 	 */
-	private JSONStreamerThread(){}
+	private JPEGStreamerThread(){}
 
 	/**
 	 * @return The instance of the WTD
 	 */
-	public static JSONStreamerThread getInstance(){
+	public static JPEGStreamerThread getInstance(){
 		if(s_instance == null){
-			s_instance = new JSONStreamerThread();
+			s_instance = new JPEGStreamerThread();
 		}
 		return s_instance;
 	}
@@ -177,7 +175,7 @@ public class JSONStreamerThread implements Runnable {
 	}
 
 	/**
-	 * Starts the JSONStreamerThread Thread
+	 * Starts the JPEGStreamerThread Thread
 	 * <br> start() will only set values, check for errors, and prepare for thread creation
 	 * <br> actual creation of thread completed in resume(), which is called during app startup
 	 * @param activity Parent activity of the Thread
@@ -238,8 +236,8 @@ public class JSONStreamerThread implements Runnable {
 		}else if(m_streamerThreadState.equals(StreamerThreadState.PREINIT)){  // If thread is initializing, finish initialization
 			this.SetState(StreamerThreadState.INITIALIZE_WRITER);
 
-			Log.i("JSONStreamer Thread", "Starting Thread: JSONStreamerThread");
-			(new Thread(this, "JSONStreamerThread")).start();
+			Log.i("JSONStreamer Thread", "Starting Thread: JPEGStreamerThread");
+			(new Thread(this, "JPEGStreamerThread")).start();
 		}else{  // This should never happen
 			Log.e("JSONStreamer Error", "Trying to resume a non-paused Thread");
 			this.logThreadState();
@@ -256,7 +254,9 @@ public class JSONStreamerThread implements Runnable {
 	 */
 	public void destroy(){
 		m_running = false;
-		this.closeSocket();
+		if (m_socketConnectionState.equals(SocketConnectionState.ALIVE)) {
+			this.closeSocket();
+		}
 		this.SetState(StreamerThreadState.PREINIT);
 	}
 
@@ -288,7 +288,7 @@ public class JSONStreamerThread implements Runnable {
 					Log.i("JSONStreamer Socket", "Connected to socket on port "+m_socket.getPort());
 					this.SetConnectionState(SocketConnectionState.ALIVE);
 				} catch (IOException e) {
-					Log.e("JSONStreamer Error", "Socket could not connect, retrying: "+e.getStackTrace().toString());
+//					Log.e("JSONStreamer Error", "Socket could not connect, retrying: "+e.getStackTrace().toString());
 					return StreamerThreadState.INITIALIZE_WRITER;
 				}
 				break;
@@ -328,6 +328,7 @@ public class JSONStreamerThread implements Runnable {
 			} catch (IOException e) {
 				Log.e("JSONStreamer Error", "Cannot get output stream of socket");
 				// This shouldn't happen so idek
+				this.closeSocket();
 			}
 		}
 

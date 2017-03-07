@@ -2,6 +2,8 @@ package com.frc8.team8vision;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.CheckBox;
 
 public class SetThresholdActivity extends AppCompatActivity {
 
@@ -17,4 +19,17 @@ public class SetThresholdActivity extends AppCompatActivity {
                                          Constants.kSliderDefaultValues[i], Constants.kSliderNames[i], this);
         }
     }
+
+	public void onCheckboxClicked(View view){
+		// Is the box now checked
+		boolean checked = ((CheckBox) view).isChecked();
+
+		// Check which box is checked
+		switch (view.getId()){
+			case R.id.flashlightEnabled:
+				if(checked){
+					MainActivity.toggleFlash();
+				}
+		}
+	}
 }

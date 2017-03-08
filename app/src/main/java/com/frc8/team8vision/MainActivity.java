@@ -189,34 +189,22 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Imgproc.cvtColor(input, imageHSV, Imgproc.COLOR_RGB2HSV);
         Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
-        // Detect contours
-        List<MatOfPoint> contours = new ArrayList<>();
-        Imgproc.findContours(mask, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        if (contours.isEmpty()) return input;
-
-        // Sort contours by area and identify the two largest
-        Collections.sort(contours, new Comparator<MatOfPoint>() {
-            @Override
-            public int compare(MatOfPoint m1, MatOfPoint m2) {
-                double area1 = Imgproc.contourArea(m1), area2 = Imgproc.contourArea(m2);
-                if (area1 > area2) return -1;
-                if (area1 < area2) return 1;
-                return 0;
+        MatOfPoint cornerMat = new MatOfPoint();
+        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .3, 50);
+        Point[] corners = cornerMat.toArray();
+        Arrays.sort(corners, new Comparator<Point>() {
+            public int compare(Point p1, Point p2) {
+                return (int)((p1.y * mWidth + p1.x) - (p2.y * mWidth + p2.x));
             }
         });
 
-        //Track corners of combined contour
-        Point[] corners;
-        if ((corners = getCorners(contours)) != null) {
-            Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
-                    new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
+        for (Point point : corners) {
+            Imgproc.circle(input, point, 15, new Scalar(255, 0, 0), -1);
+        }
+        boolean flag = true;
+        if (true) return input;
 
-            //corners = new Point[] {new Point(250, 750), new Point(1275, 750), new Point(250, 250), new Point(1275, 250)};
-
-            for (int i = 0; i < 4; i++) {
-                Imgproc.circle(input, corners[i], 15, colors[i], -1);
-            }
+        if ((corners.length == 8)) {
             getPosePnP(corners, input);
 
             Imgproc.putText(input,
@@ -224,45 +212,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                     xDist), new Point(0, mHeight - 30),
                     Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
         }
-
-        Imgproc.drawContours(input, contours, -1, new Scalar(0, 255, 0), 2);
-
         Imgproc.putText(input,
                 Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
                 Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
-
         return input;
-    }
-
-    public Point[] getCorners(List<MatOfPoint> contours) {
-        List<Point>  combined = new ArrayList<>();
-        for (MatOfPoint contour : contours) {
-            combined.addAll(contour.toList());
-        }
-        Point[] corners = new Point[4];
-        Point[] array = combined.toArray(new Point[0]);
-        if (array.length == 0) {
-            Log.d(TAG, "Empty array");
-            return null;
-        }
-        Arrays.sort(array, new Comparator<Point>() {
-            @Override
-            public int compare(Point o1, Point o2) {
-                return (int)((o1.y - o1.x) - (o2.y - o2.x));
-            }
-        });
-        corners[1] = array[0];
-        corners[3] = array[array.length - 1];
-        Arrays.sort(array, new Comparator<Point>() {
-            @Override
-            public int compare(Point o1, Point o2) {
-                return (int)((o1.y + o1.x) - (o2.y + o2.x));
-            }
-        });
-        corners[0] = array[0];
-        corners[2] = array[array.length - 1];
-
-        return corners;
     }
 
     public void getPosePnP(Point[] src, Mat input) {

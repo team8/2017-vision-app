@@ -146,9 +146,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public void onCameraViewStarted(int width, int height) {
         mWidth = width;
         mHeight = height;
-        mCameraView.setParameters();
+        //mCameraView.setParameters();
 
-        mCameraView.toggleFlashLight();
+        //mCameraView.toggleFlashLight();
 
         WriteDataThread.getInstance().resume();
     }
@@ -180,29 +180,36 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         }
 
         // Apply HSV thresholding to input
-        Mat mask = new Mat();
+        Mat mask = new Mat(), inputGray = new Mat(input.size(), input.type());
 
         // Lower and upper hsv thresholds
         Scalar lower_bound = new Scalar(sliderValues[0], sliderValues[1], sliderValues[2]),
                 upper_bound = new Scalar(sliderValues[3], sliderValues[4], sliderValues[5]);
 
         Imgproc.cvtColor(input, imageHSV, Imgproc.COLOR_RGB2HSV);
+        Imgproc.cvtColor(input, inputGray, Imgproc.COLOR_RGB2GRAY);
         Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
         MatOfPoint cornerMat = new MatOfPoint();
-        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .3, 50);
+
+        Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
+        Core.convertScaleAbs(mask, mask);
+
+        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .01, 50, new Mat(), 7, true, .05);
         Point[] corners = cornerMat.toArray();
         Arrays.sort(corners, new Comparator<Point>() {
             public int compare(Point p1, Point p2) {
-                return (int)((p1.y * mWidth + p1.x) - (p2.y * mWidth + p2.x));
+                return (int)((p1.x + p1.y) - (p2.x + p2.y));
             }
         });
 
-        for (Point point : corners) {
-            Imgproc.circle(input, point, 15, new Scalar(255, 0, 0), -1);
+        for (int i = 0; i < corners.length; i++) {
+            Imgproc.circle(input, corners[i], 15, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
+            //Imgproc.putText(input, Integer.toString(i), corners[i], Core.FONT_HERSHEY_SIMPLEX, .5, new Scalar(255, 255, 255));
         }
-        boolean flag = true;
-        if (true) return input;
+        int code = 0;
+        if (code == 1) return mask;
+        if (code == 2) return input;
 
         if ((corners.length == 8)) {
             getPosePnP(corners, input);
@@ -219,21 +226,23 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public void getPosePnP(Point[] src, Mat input) {
-        double dist = 0, scalar = 0.2, width = Constants.kVisionTargetWidth * mPPI * scalar, height = Constants.kVisionTargetHeight * mPPI * scalar;
-        double leftX = 0, topY = 0, rightX = width, bottomY = height, z = dist - 2 * mPPI * scalar;
-
-        Imgproc.rectangle(input, new Point(leftX, topY), new Point(rightX, bottomY), new Scalar(255, 255, 255));
-        //src = new Point[]{new Point(0, 500), new Point(1025, 500), new Point(0, 0), new Point(1025, 0)};
-        Scalar[] colors = {new Scalar(255, 0, 0), new Scalar(0, 255, 0),
-                new Scalar(0, 0, 255), new Scalar(0, 0, 0)};
-        MatOfPoint2f dstPoints = new MatOfPoint2f(src[0], src[1], src[2], src[3]);
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, dist), new Point3(rightX, topY, dist),
-                new Point3(rightX, bottomY, dist), new Point3(leftX, bottomY, dist));
+        double dist = 0, scalar = 0.2 * mPPI, width = Constants.kVisionTargetWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
+        double leftX = 0, topY = 0, left1X = leftX + Constants.kTapeWidth * scalar, rightX = width, right1X = rightX - Constants.kTapeWidth * scalar , bottomY = height, z = dist - 2 * scalar;
+        MatOfPoint2f dstPoints = new MatOfPoint2f();
+        dstPoints.fromArray(src);
+        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, dist),
+                                                new Point3(left1X, topY, dist),
+                                                new Point3(leftX, bottomY, dist),
+                                                new Point3(left1X, bottomY, dist),
+                                                new Point3(right1X, topY, dist),
+                                                new Point3(rightX, topY, dist),
+                                                new Point3(right1X, bottomY, dist),
+                                                new Point3(rightX, bottomY, dist));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
         MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(leftX, topY, 0), new Point3(rightX, topY, 0), new Point3(rightX, bottomY, 0), new Point3(leftX, bottomY, 0),
                                                     new Point3(leftX, topY, z), new Point3(rightX, topY, z), new Point3(rightX, bottomY, z), new Point3(leftX, bottomY, z),
-                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * mPPI));
+                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar));
        /* MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(0, y, dist), new Point3(x, y, dist),
                 new Point3(0, 0, dist), new Point3(x, 0, dist));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
@@ -250,7 +259,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5);
         }
         Imgproc.circle(input, arr[8], 10, new Scalar(255, 255, 255), -1);
-        Log.d(TAG, tvecs.size().toString());
         xDist = tvecs.get(0, 0)[0] / mPPI;
         /*Point3[] newSrc = new Point3[4];
         for (int i = 0; i < 4; i++) newSrc[i] = new Point3(src[i].x, src[i].y, 500);

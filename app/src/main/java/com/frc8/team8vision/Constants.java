@@ -6,7 +6,7 @@ public class Constants {
     public static final String kRIOHostName = "localhost";
     public static final int kDataPortNumber = 8008;
     public static final int kVisionPortNumber = 8009;
-    public static final long kDataUpdateRateMS = 100;
+    public static final long kDataUpdateRateMS = 5;
     public static final long kVisionUpdateRateMS = 10;
     public static final long kChangeStateWaitMS = 200;
     public static final long kVisionIdleTimeS = 5;

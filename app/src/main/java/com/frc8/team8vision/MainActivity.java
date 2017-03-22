@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mCameraView.setCvCameraViewListener(this);
         mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
 
-        WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.BROADCAST_IDLE);
+        WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
         JPEGStreamerThread.getInstance().start(this);
     }
 

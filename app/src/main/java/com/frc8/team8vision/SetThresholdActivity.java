@@ -3,6 +3,13 @@ package com.frc8.team8vision;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
+/**
+ * This activity represents a setting screen that can be accessed to adjust
+ * the HSV threshold. It maintains six sliders, or seekbars, which represent
+ * the minimum and maximum HSV.
+ *
+ * @author Calvin Yan
+ */
 public class SetThresholdActivity extends AppCompatActivity {
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];

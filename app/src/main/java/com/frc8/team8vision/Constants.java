@@ -1,5 +1,10 @@
 package com.frc8.team8vision;
 
+/**
+ * Stores various constants to be used by the rest of the app.
+ *
+ * @author Calvin Yan
+ */
 public class Constants {
 
     // roboRIO networking constants

@@ -19,6 +19,11 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.List;
 
+/**
+ * Heavily modified version of OpenCV's camera class that supports portrait mode
+ * and flashlight manipulation. Much of this overlaps with JavaCameraView; it will
+ * eventually be made a subclass.
+ */
 public class SketchyCameraView extends CameraBridgeViewBase implements Camera.PreviewCallback {
 
     private static final int MAGIC_TEXTURE_ID = 10;

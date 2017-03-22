@@ -187,16 +187,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 upper_bound = new Scalar(sliderValues[3], sliderValues[4], sliderValues[5]);
 
         Imgproc.cvtColor(input, imageHSV, Imgproc.COLOR_RGB2HSV);
-        Imgproc.cvtColor(input, inputGray, Imgproc.COLOR_RGB2GRAY);
         Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
         MatOfPoint cornerMat = new MatOfPoint();
-
-        Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
-        Core.convertScaleAbs(mask, mask);
-
-        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .01, 50, new Mat(), 7, true, .05);
+        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .1, 10, new Mat(), 7, true, .05);
         Point[] corners = cornerMat.toArray();
+
         Arrays.sort(corners, new Comparator<Point>() {
             public int compare(Point p1, Point p2) {
                 return (int)((p1.x + p1.y) - (p2.x + p2.y));
@@ -207,12 +203,19 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.circle(input, corners[i], 15, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
             //Imgproc.putText(input, Integer.toString(i), corners[i], Core.FONT_HERSHEY_SIMPLEX, .5, new Scalar(255, 255, 255));
         }
+
         int code = 0;
         if (code == 1) return mask;
         if (code == 2) return input;
 
         if ((corners.length == 8)) {
-            getPosePnP(corners, input);
+            Point[] srcPoints = new Point[9];
+            Point centroid = centroid(new Point[]{corners[0], corners[2], corners[5], corners[7]});
+            if (centroid == null) return input;
+            if (centroid != null) Imgproc.circle(input, centroid, 10, new Scalar(0, 0, 255), -1);
+            srcPoints[0] = centroid;
+            for (int i = 0; i < 8; i++) srcPoints[i+1] = corners[i];
+            getPosePnP(srcPoints, input);
 
             Imgproc.putText(input,
                     String.format(Locale.getDefault(), "%.2f",
@@ -226,11 +229,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public void getPosePnP(Point[] src, Mat input) {
-        double dist = 0, scalar = 0.2 * mPPI, width = Constants.kVisionTargetWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
-        double leftX = 0, topY = 0, left1X = leftX + Constants.kTapeWidth * scalar, rightX = width, right1X = rightX - Constants.kTapeWidth * scalar , bottomY = height, z = dist - 2 * scalar;
+        double dist = 0, scalar = mPPI, width = Constants.kVisionTargetWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
+        double leftX = (mWidth - width) / 2, topY = (mHeight - height) / 2, left1X = leftX + Constants.kTapeWidth * scalar, rightX = leftX + width, right1X = rightX - Constants.kTapeWidth * scalar , bottomY = topY + height, z = dist - 2 * scalar;
         MatOfPoint2f dstPoints = new MatOfPoint2f();
         dstPoints.fromArray(src);
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, dist),
+        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3((leftX+rightX)/2, (topY+bottomY)/2, dist),
+                                                new Point3(leftX, topY, dist),
                                                 new Point3(left1X, topY, dist),
                                                 new Point3(leftX, bottomY, dist),
                                                 new Point3(left1X, bottomY, dist),
@@ -242,7 +246,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
         MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(leftX, topY, 0), new Point3(rightX, topY, 0), new Point3(rightX, bottomY, 0), new Point3(leftX, bottomY, 0),
                                                     new Point3(leftX, topY, z), new Point3(rightX, topY, z), new Point3(rightX, bottomY, z), new Point3(leftX, bottomY, z),
-                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar));
+                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar),
+                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, dist));
        /* MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(0, y, dist), new Point3(x, y, dist),
                 new Point3(0, 0, dist), new Point3(x, 0, dist));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
@@ -259,7 +264,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5);
         }
         Imgproc.circle(input, arr[8], 10, new Scalar(255, 255, 255), -1);
-        xDist = tvecs.get(0, 0)[0] / mPPI;
+        double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
+        xDist = ((arr[8].x - mWidth / 2) * zDist / 4) / mPPI;
+        Log.d(TAG, xDist + " " + zDist + " " + (arr[8].x - mWidth / 2));
+        //xDist = zDist;
         /*Point3[] newSrc = new Point3[4];
         for (int i = 0; i < 4; i++) newSrc[i] = new Point3(src[i].x, src[i].y, 500);
         srcPoints = new MatOfPoint3f();
@@ -268,6 +276,26 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);*/
         double[] angles = rvecs.toArray();
         turnAngle = Math.toDegrees(angles[1]);
+    }
+
+    public Point centroid(Point[] points) {
+        Point[] tPoints = new Point[4];
+        int index = 0;
+        for (int i = 0; i < 2; i++) {
+            for (int j = i+1; j < 3; j++) {
+                for (int k = j+1; k < 4; k++) {
+                    tPoints[index++] = new Point((points[i].x + points[j].x + points[k].x) / 3,
+                                                            (points[i].y + points[j].y + points[k].y) / 3);
+                }
+            }
+        }
+        double[] vector1 = {tPoints[3].x - tPoints[0].x, tPoints[0].y - tPoints[3].y},
+                vector2 = {tPoints[2].x - tPoints[1].x, tPoints[1].y - tPoints[2].y},
+                vector3 = {tPoints[1].x - tPoints[0].x, tPoints[0].y - tPoints[1].y};
+        double cross = vector1[0] * vector2[1] - vector1[1] * vector2[0];
+        if (cross < .00000001) return null;
+        double scalar = (vector3[0] * vector2[1] - vector3[1] * vector2[0]) / cross;
+        return new Point(tPoints[0].x + vector1[0] * scalar, tPoints[0].y - vector1[1] * scalar);
     }
 
     @Override

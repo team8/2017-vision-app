@@ -1,21 +1,16 @@
 package com.frc8.team8vision;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.widget.Toast;
 
-import org.json.JSONException;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
@@ -34,17 +29,9 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Locale;
-
-import org.json.JSONObject;
 
 /**
  * The app's startup activity, as suggested by its name. Handles all
@@ -200,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
         lastCycleTimestamp = System.currentTimeMillis();
 
-        // Retrieve HSV threshold stored in app, see SetThresholdActivity.java for more info
+        // Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         int[] sliderValues = new int[6];
         for (int i = 0; i < 6; i++) {
@@ -227,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         // Detect corners on vision target using Harris Corner Detector
         MatOfPoint cornerMat = new MatOfPoint();
-        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .1, 10, new Mat(), 7, true, .05);
+        Imgproc.goodFeaturesToTrack(mask, cornerMat, 4, .1, 10, new Mat(), 7, true, .05);
         Point[] corners = cornerMat.toArray();
 
         /*
@@ -245,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.circle(input, corners[i], 15, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
         }
 
-        if ((corners.length == 8)) {
+        if ((corners.length == 4)) {
             // Compute the three rotations and three translations of the camera
             getPosePnP(corners, input);
 
@@ -270,18 +257,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
      * @param input - the image captured by the camera
      */
     public void getPosePnP(Point[] src, Mat input) {
-        double scalar = mPPI, width = Constants.kVisionTargetWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
-        double leftX = (mWidth - width) / 2, topY = (mHeight - height) / 2, left1X = leftX + Constants.kTapeWidth * scalar, rightX = leftX + width, right1X = rightX - Constants.kTapeWidth * scalar , bottomY = topY + height, z = 0 - 2 * scalar;
+        double scalar = mPPI, width = Constants.kTapeWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
+        double leftX = (mWidth - width) / 2, topY = (mHeight - height) / 2, rightX = leftX + width, bottomY = topY + height, z = 0 - 2 * scalar;
         MatOfPoint2f dstPoints = new MatOfPoint2f();
         dstPoints.fromArray(src);
         // In order to calculate the pose, we create a model of the vision targets using 3D coordinates
         MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, 0),
-                                                new Point3(left1X, topY, 0),
-                                                new Point3(leftX, bottomY, 0),
-                                                new Point3(left1X, bottomY, 0),
-                                                new Point3(right1X, topY, 0),
                                                 new Point3(rightX, topY, 0),
-                                                new Point3(right1X, bottomY, 0),
+                                                new Point3(leftX, bottomY, 0),
                                                 new Point3(rightX, bottomY, 0));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
@@ -291,10 +274,28 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
          * I will delete it later.
          */
 
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(leftX, topY, 0), new Point3(rightX, topY, 0), new Point3(rightX, bottomY, 0), new Point3(leftX, bottomY, 0),
-                                                    new Point3(leftX, topY, z), new Point3(rightX, topY, z), new Point3(rightX, bottomY, z), new Point3(leftX, bottomY, z),
-                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar),
-                                                    new Point3((leftX+rightX)/2, (topY+bottomY)/2, 0));
+        /*
+         * What x position is the peg supposed to be at? This depends on which
+         * target is being tracked - right or left.
+         */
+
+        double pegX;
+        if (SettingsActivity.trackingLeftTarget()) {
+            pegX = leftX + Constants.kVisionTargetWidth*scalar/2;
+        } else {
+            pegX = rightX - Constants.kVisionTargetWidth*scalar/2;
+        }
+
+        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(leftX, topY, 0),
+                                                new Point3(rightX, topY, 0),
+                                                new Point3(rightX, bottomY, 0),
+                                                new Point3(leftX, bottomY, 0),
+                                                new Point3(leftX, topY, z),
+                                                new Point3(rightX, topY, z),
+                                                new Point3(rightX, bottomY, z),
+                                                new Point3(leftX, bottomY, z),
+                                                new Point3(pegX, (topY+bottomY)/2, 0),
+                                                new Point3(pegX, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar));
         MatOfPoint2f result = new MatOfPoint2f();
         Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
         Point[] arr = result.toArray();
@@ -306,7 +307,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         }
 
         // Estimates the position of the tip of the peg
-        Imgproc.circle(input, arr[8], 10, new Scalar(255, 255, 255), -1);
+        Imgproc.line(input, arr[8], arr[9], new Scalar(255, 255, 255), 5);
         // Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
         double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
         // Given the perceived x displacement,
@@ -323,7 +324,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public void launchSetThresholdActivity(MenuItem item) {
-        Intent intent = new Intent(this, SetThresholdActivity.class);
+        Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
     }
 

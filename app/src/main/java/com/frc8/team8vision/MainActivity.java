@@ -26,6 +26,7 @@ import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
@@ -161,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mHeight = height;
 
         // Reduce exposure and turn on flashlight - to be used with reflective tape
-        //mCameraView.setParameters();
+        mCameraView.setParameters();
         //mCameraView.toggleFlashLight();
 
         WriteDataThread.getInstance().resume();
@@ -225,6 +226,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Imgproc.cvtColor(input, imageHSV, Imgproc.COLOR_RGB2HSV);
         // Apply threshold
         Core.inRange(imageHSV, lower_bound, upper_bound, mask);
+		Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_OPEN, Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, new Size(3, 3)));
+		Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
+		Core.convertScaleAbs(mask, mask);
+
+		int code = 1;
+
+		if (code == 0) return mask;
 
         // Detect corners on vision target using Harris Corner Detector
         MatOfPoint cornerMat = new MatOfPoint();
@@ -261,6 +269,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return input;
     }
 
+
     /**
      * Determines the transformation of a camera relative to the vision target.
      * The transformation is broken down into rotations and translations along the x, y, and z axes.
@@ -276,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         MatOfPoint2f dstPoints = new MatOfPoint2f();
         dstPoints.fromArray(src);
         // In order to calculate the pose, we create a model of the vision targets using 3D coordinates
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3((leftX+rightX)/2, (topY+bottomY)/2, 0),
+        MatOfPoint3f srcPoints = new MatOfPoint3f(
                                                 new Point3(leftX, topY, 0),
                                                 new Point3(left1X, topY, 0),
                                                 new Point3(leftX, bottomY, 0),

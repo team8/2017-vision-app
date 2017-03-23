@@ -275,8 +275,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         MatOfPoint2f dstPoints = new MatOfPoint2f();
         dstPoints.fromArray(src);
         // In order to calculate the pose, we create a model of the vision targets using 3D coordinates
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3((leftX+rightX)/2, (topY+bottomY)/2, 0),
-                                                new Point3(leftX, topY, 0),
+        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, 0),
                                                 new Point3(left1X, topY, 0),
                                                 new Point3(leftX, bottomY, 0),
                                                 new Point3(left1X, bottomY, 0),

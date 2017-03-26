@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.RadioButton;
+import android.widget.Switch;
 
 /**
  * This activity represents a setting screen that can be accessed to adjust
@@ -18,7 +19,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
 
-    private static boolean trackingLeft, tuningMode;
+    private static boolean trackingLeft, tuningMode, flashlightOn;
 
     private SharedPreferences preferences;
 
@@ -34,6 +35,8 @@ public class SettingsActivity extends AppCompatActivity {
         if (tuningMode) toCheck = (RadioButton)findViewById(R.id.tuning_mode);
         toCheck.setChecked(true);
 
+        ((Switch)findViewById(R.id.flashlight)).setChecked(preferences.getBoolean("Flashlight On", false));
+
         for (int i = 0; i < 6; i++) {
             seekBars[i] = new HSVSeekBar(Constants.kSliderIds[i], Constants.kSliderReadoutIds[i],
                                          Constants.kSliderDefaultValues[i], Constants.kSliderNames[i], this);
@@ -48,9 +51,17 @@ public class SettingsActivity extends AppCompatActivity {
         editor.apply();
     }
 
+    public void onSwitchClicked(View view) {
+        SharedPreferences.Editor editor = preferences.edit();
+        flashlightOn = !flashlightOn;
+        editor.putBoolean("Flashlight On", flashlightOn);
+        editor.apply();
+    }
+
     public static boolean trackingLeftTarget() { return trackingLeft; }
 
-    public static boolean tuningMode() { return tuningMode;
-    }
+    public static boolean tuningMode() { return tuningMode; }
+
+    public static boolean flashlightOn() { return flashlightOn; }
 
 }

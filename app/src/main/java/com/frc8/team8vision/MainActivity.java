@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.RadioButton;
+import android.widget.Switch;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -159,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         // Reduce exposure and turn on flashlight - to be used with reflective tape
         mCameraView.setParameters();
-        mCameraView.toggleFlashLight();
+        if (SettingsActivity.flashlightOn()) mCameraView.toggleFlashLight();
 
         WriteDataThread.getInstance().resume();
         JPEGStreamerThread.getInstance().resume();

@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.RadioButton;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -43,6 +44,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private static final String TAG = "MainActivity";
 
     private static Mat imageRGB;
+    private static Mat imageRGB_raw;
+    // Lock for synchronized access of imageRGB
+    private final Object lock = new Object();
 
     private static double turnAngle = 0, xDist = 0;
     private static long cycleTime = 0;
@@ -51,11 +55,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private Mat intrinsicMatrix, imageHSV;
 
-    private SketchyCameraView mCameraView;
+    private static SketchyCameraView mCameraView;
 
     private long lastCycleTimestamp = 0;
 
     private int mWidth = 0, mHeight = 0, mPPI = 0;
+    private int mResolutionFactor = 3;      // Divides screen images by given factor
 
     /**
      * The delay between starting the app and loading OpenCV libraries means that
@@ -109,17 +114,19 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i("TEST ALVIN", "Activity Created");
 
         mCameraView = new SketchyCameraView(this, -1);
         setContentView(mCameraView);
         mCameraView.setCvCameraViewListener(this);
+        mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
 
         WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
+        JPEGStreamerThread.getInstance().start(this);
     }
 
     @Override
     public void onPause() {
+        JPEGStreamerThread.getInstance().pause();
         WriteDataThread.getInstance().pause();
         super.onPause();
 
@@ -142,6 +149,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             if (imageHSV != null) imageHSV.release();
         }
         WriteDataThread.getInstance().destroy();
+        JPEGStreamerThread.getInstance().destroy();
     }
 
     @Override
@@ -150,10 +158,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         mHeight = height;
 
         // Reduce exposure and turn on flashlight - to be used with reflective tape
-        //mCameraView.setParameters();
-        //mCameraView.toggleFlashLight();
+        mCameraView.setParameters();
+        mCameraView.toggleFlashLight();
 
         WriteDataThread.getInstance().resume();
+        JPEGStreamerThread.getInstance().resume();
     }
 
     @Override
@@ -166,12 +175,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
      * the app begins to process the image
      */
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        imageRGB = inputFrame.rgba();
-        if (isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Galaxy camera is inverted
-        // Process the image frame
-        imageRGB = track(imageRGB);
-        imageHSV.release();
+        synchronized (lock) {
+            imageRGB_raw = inputFrame.rgba().clone();
+			Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
+            imageRGB = inputFrame.rgba();
+			if (isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Galaxy camera feed is inverted
+            imageRGB = track(imageRGB);
+        }
 
+        imageHSV.release();
         // The returned image will be displayed on screen
         return imageRGB;
     }
@@ -212,14 +224,27 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         // Apply threshold
         Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
+        // Morphological opening removes salt noise
+		Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_OPEN, Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, new Size(9, 9)));
+		// Normalize and scale binary mask so it can be displayed
+        Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
+		Core.convertScaleAbs(mask, mask);
+
+        // Setting this to 0 returns the HSV threshold result - temporary implementation
+		int code = 1;
+        if (SettingsActivity.tuningMode()) {
+            return mask;
+        }
+
+
         // Detect corners on vision target using Harris Corner Detector
         MatOfPoint cornerMat = new MatOfPoint();
-        Imgproc.goodFeaturesToTrack(mask, cornerMat, 4, .1, 10, new Mat(), 7, true, .05);
+        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .1, 10, new Mat(), 7, true, .05);
         Point[] corners = cornerMat.toArray();
 
         /*
          * Sort corners based on the sum of their x and y coordinates. This is to ensure
-         * that they are always in the same order. Sketchy, but it works.
+         * that they are always in the same order. Sketchy, but it works
          */
         Arrays.sort(corners, new Comparator<Point>() {
             public int compare(Point p1, Point p2) {
@@ -239,11 +264,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.putText(input,
                     String.format(Locale.getDefault(), "%.2f",
                     xDist), new Point(0, mHeight - 30),
-                    Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
+                    Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
         }
         Imgproc.putText(input,
                 Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
-                Core.FONT_HERSHEY_SIMPLEX, 2, new Scalar(0, 255, 0), 3);
+                Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
     }
 
@@ -269,11 +294,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
 
-        /* Creates a rectangular prism with 3D coordinates and uses the calculated transformation
-         * to project the prism on the vision target. Aside from looking really cool this doesn't do much.
-         * I will delete it later.
-         */
-
         /*
          * What x position is the peg supposed to be at? This depends on which
          * target is being tracked - right or left.
@@ -286,32 +306,20 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             pegX = rightX - Constants.kVisionTargetWidth*scalar/2;
         }
 
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(leftX, topY, 0),
-                                                new Point3(rightX, topY, 0),
-                                                new Point3(rightX, bottomY, 0),
-                                                new Point3(leftX, bottomY, 0),
-                                                new Point3(leftX, topY, z),
-                                                new Point3(rightX, topY, z),
-                                                new Point3(rightX, bottomY, z),
-                                                new Point3(leftX, bottomY, z),
-                                                new Point3(pegX, (topY+bottomY)/2, 0),
+        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(pegX, (topY+bottomY)/2, 0),
                                                 new Point3(pegX, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar));
+
         MatOfPoint2f result = new MatOfPoint2f();
         Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
         Point[] arr = result.toArray();
-        Scalar red = new Scalar(255, 0, 0);
-        for (int i = 0; i < 4; i++) {
-            Imgproc.line(input, arr[i], arr[(i+1) % 4], red, 5);
-            Imgproc.line(input, arr[i], arr[i+4], red, 5);
-            Imgproc.line(input, arr[i+4], arr[(i+1) % 4+4], new Scalar(0, 0, 255), 5);
-        }
 
-        // Estimates the position of the tip of the peg
-        Imgproc.line(input, arr[8], arr[9], new Scalar(255, 255, 255), 5);
+        // Estimates the position of the base and tip of the peg
+        Imgproc.line(input, arr[0], arr[1], new Scalar(255, 255, 255), 5);
         // Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
         double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
         // Given the perceived x displacement,
-        xDist = ((arr[8].x - mWidth / 2) * zDist / 4) / mPPI;
+        xDist = zDist;
+        //xDist = ((arr[1].x - mWidth / 2) * zDist / 4) / mPPI;
         double[] angles = rvecs.toArray();
         turnAngle = Math.toDegrees(angles[1]);
     }
@@ -338,14 +346,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     // Getter methods allowing the networking utility classes to retrieve data
 
     public static Mat getImage() {
-        if (imageRGB.empty()) {
-            return null;
-        }
-        Mat resized_rgb = new Mat();
-        Imgproc.resize(imageRGB, resized_rgb, new Size(320, 180));
-        return resized_rgb;
+       return imageRGB_raw;
     }
     public static double getTurnAngle() { return turnAngle; }
     public static double getXDisplacement() { return xDist; }
     public static long getCycleTime() { return cycleTime; }
+
+    public static void toggleFlash() {
+		mCameraView.toggleFlashLight();
+	}
 }

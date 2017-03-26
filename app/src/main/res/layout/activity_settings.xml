@@ -121,6 +121,11 @@
                 android:layout_height="wrap_content"
                 android:text="@string/target_right"
                 android:onClick="onRadioButtonClicked" />
+            <RadioButton android:id="@+id/tuning_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tuning_mode"
+                android:onClick="onRadioButtonClicked" />
 
         </RadioGroup>
 

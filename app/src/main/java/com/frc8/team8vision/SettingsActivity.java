@@ -18,7 +18,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
 
-    private static boolean trackingLeft;
+    private static boolean trackingLeft, tuningMode;
 
     private SharedPreferences preferences;
 
@@ -31,6 +31,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         trackingLeft = preferences.getBoolean("Tracking Left", true);
         RadioButton toCheck = (RadioButton)findViewById(((trackingLeft) ? R.id.target_left : R.id.target_right));
+        if (tuningMode) toCheck = (RadioButton)findViewById(R.id.tuning_mode);
         toCheck.setChecked(true);
 
         for (int i = 0; i < 6; i++) {
@@ -42,10 +43,14 @@ public class SettingsActivity extends AppCompatActivity {
     public void onRadioButtonClicked(View view) {
         SharedPreferences.Editor editor = preferences.edit();
         trackingLeft = view.getId() == R.id.target_left;
+        tuningMode = view.getId() == R.id.tuning_mode;
         editor.putBoolean("Tracking Left", trackingLeft);
         editor.apply();
     }
 
     public static boolean trackingLeftTarget() { return trackingLeft; }
+
+    public static boolean tuningMode() { return tuningMode;
+    }
 
 }

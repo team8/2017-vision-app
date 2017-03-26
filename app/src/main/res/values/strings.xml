@@ -6,4 +6,5 @@
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="target_left">Track left target</string>
     <string name="target_right">Track right target</string>
+    <string name="tuning_mode">Tuning mode</string>
 </resources>

@@ -8,8 +8,13 @@ package com.frc8.team8vision;
 public class Constants {
 
     // roboRIO networking constants
-    public static final String kRIOHostName = "roboRIO-8-frc.local";
-    public static final int kRIOPortNumber = 8008;
+    public static final String kRIOHostName = "localhost";
+    public static final int kDataPortNumber = 8008;
+    public static final int kVisionPortNumber = 8009;
+    public static final long kDataUpdateRateMS = 5;
+    public static final long kVisionUpdateRateMS = 10;
+    public static final long kChangeStateWaitMS = 200;
+    public static final long kVisionIdleTimeS = 5;
 
     // HSV threshold slider constants
     public static final int[] kSliderIds = {R.id.hLow, R.id.sLow, R.id.vLow, R.id.hHigh, R.id.sHigh, R.id.vHigh},
@@ -32,7 +37,8 @@ public class Constants {
     public static final double[] kGalaxyDistortionCoefficients = {.462497044, -1.63724827, -.00256097258, .00220231323};
 
     // Nexus 5x
-    public static final int kNexusPixelsPerInch = 424;
+//    public static final int kNexusPixelsPerInch = 424;
+	public static final int kNexusPixelsPerInch = 10770;
     public static final double kNexusFocalLengthX = 2004.00956, kNexusFocalLengthY = 2000.42830;
     public static final double[][] kNexusIntrinsicMatrix = {{kNexusFocalLengthX, 0,                  0},
                                                             {0,                  kNexusFocalLengthY, 0},

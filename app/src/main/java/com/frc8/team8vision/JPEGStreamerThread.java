@@ -283,7 +283,7 @@ public class JPEGStreamerThread implements Runnable {
 				break;
 			case CLOSED:
 				try {
-					Log.i("JSONStreamer Socket", "Trying to connect to server");
+					//Log.i("JSONStreamer Socket", "Trying to connect to server");
 					m_socket = new Socket(Constants.kRIOHostName, Constants.kVisionPortNumber);
 					Log.i("JSONStreamer Socket", "Connected to socket on port "+m_socket.getPort());
 					this.SetConnectionState(SocketConnectionState.ALIVE);

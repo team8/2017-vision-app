@@ -30,10 +30,16 @@ import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+
+import static org.opencv.imgproc.Imgproc.contourArea;
 
 /**
  * The app's startup activity, as suggested by its name. Handles all
@@ -200,6 +206,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
         lastCycleTimestamp = System.currentTimeMillis();
 
+        Imgproc.putText(input,
+                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
+                Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
+
         // Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         int[] sliderValues = new int[6];
@@ -225,105 +235,97 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         // Apply threshold
         Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
-        // Morphological opening removes salt noise
-		Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_OPEN, Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, new Size(9, 9)));
-		// Normalize and scale binary mask so it can be displayed
-        Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
-		Core.convertScaleAbs(mask, mask);
 
-        // Setting this to 0 returns the HSV threshold result - temporary implementation
-		int code = 1;
+        // Tuning mode displays the result of the threshold
         if (SettingsActivity.tuningMode()) {
+            // Normalize and scale binary mask so it can be displayed
+            Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
+            Core.convertScaleAbs(mask, mask);
             return mask;
         }
 
-
-        // Detect corners on vision target using Harris Corner Detector
-        MatOfPoint cornerMat = new MatOfPoint();
-        Imgproc.goodFeaturesToTrack(mask, cornerMat, 8, .1, 10, new Mat(), 7, true, .05);
-        Point[] corners = cornerMat.toArray();
-
-        /*
-         * Sort corners based on the sum of their x and y coordinates. This is to ensure
-         * that they are always in the same order. Sketchy, but it works
-         */
-        Arrays.sort(corners, new Comparator<Point>() {
-            public int compare(Point p1, Point p2) {
-                return (int)((p1.x + p1.y) - (p2.x + p2.y));
+        // Identify all contours
+        List<MatOfPoint> contours = new ArrayList<>();
+        Imgproc.findContours(mask, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        if (contours.isEmpty()) return input;
+        // Sort contours in decreasing order of area and take largest one
+        Collections.sort(contours, new Comparator<MatOfPoint>() {
+            public int compare(MatOfPoint one, MatOfPoint two) {
+                return Double.compare(contourArea(two), contourArea(one));
             }
         });
 
+        MatOfPoint contour = contours.get(0);
+
+        // Track corners of target
+        Point[] corners = getCorners(contour);
+
         // Draw corners on image
         for (int i = 0; i < corners.length; i++) {
-            Imgproc.circle(input, corners[i], 15, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
+            Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
         }
 
-        if ((corners.length == 4)) {
-            // Compute the three rotations and three translations of the camera
-            getPosePnP(corners, input);
+        double ratio = (2 * mPPI)/(corners[1].x - corners[0].x);
 
-            Imgproc.putText(input,
-                    String.format(Locale.getDefault(), "%.2f",
-                    xDist), new Point(0, mHeight - 30),
-                    Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
-        }
+        double target = (SettingsActivity.trackingLeftTarget()) ? corners[0].x + (Constants.kVisionTargetWidth/2) * mPPI / ratio
+                                                                : corners[1].x - (Constants.kVisionTargetWidth/2) * mPPI / ratio;
+
+        Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
+
+        Log.d(TAG, "" + (target - corners[0].x)/mPPI);
+
+        xDist = (target - mWidth/2)/mPPI * ratio;
+
         Imgproc.putText(input,
-                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
+                String.format(Locale.getDefault(), "%.2f",
+                xDist), new Point(0, mHeight - 30),
                 Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
     }
 
     /**
-     * Determines the transformation of a camera relative to the vision target.
-     * The transformation is broken down into rotations and translations along the x, y, and z axes.
-     * Note that the rotation values are accurate while the translations are not - I'm still trying
-     * to figure out how to use the middle of the target as the reference point, instead of the top
-     * left corner.
-     * @param src - corners of the image contained in an array
-     * @param input - the image captured by the camera
+     * Identify four corners of the contour. Sketchy implementation but it works.
      */
-    public void getPosePnP(Point[] src, Mat input) {
-        double scalar = mPPI, width = Constants.kTapeWidth * scalar, height = Constants.kVisionTargetHeight * scalar;
-        double leftX = (mWidth - width) / 2, topY = (mHeight - height) / 2, rightX = leftX + width, bottomY = topY + height, z = 0 - 2 * scalar;
-        MatOfPoint2f dstPoints = new MatOfPoint2f();
-        dstPoints.fromArray(src);
-        // In order to calculate the pose, we create a model of the vision targets using 3D coordinates
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, 0),
-                                                new Point3(rightX, topY, 0),
-                                                new Point3(leftX, bottomY, 0),
-                                                new Point3(rightX, bottomY, 0));
-        MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
-        Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
-
-        /*
-         * What x position is the peg supposed to be at? This depends on which
-         * target is being tracked - right or left.
-         */
-
-        double pegX;
-        if (SettingsActivity.trackingLeftTarget()) {
-            pegX = leftX + Constants.kVisionTargetWidth*scalar/2;
-        } else {
-            pegX = rightX - Constants.kVisionTargetWidth*scalar/2;
-        }
-
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(pegX, (topY+bottomY)/2, 0),
-                                                new Point3(pegX, (topY+bottomY)/2, -1 * Constants.kPegLength * scalar));
-
-        MatOfPoint2f result = new MatOfPoint2f();
-        Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
-        Point[] arr = result.toArray();
-
-        // Estimates the position of the base and tip of the peg
-        Imgproc.line(input, arr[0], arr[1], new Scalar(255, 255, 255), 5);
-        // Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
-        double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
-        // Given the perceived x displacement,
-        xDist = zDist;
-        //xDist = ((arr[1].x - mWidth / 2) * zDist / 4) / mPPI;
-        double[] angles = rvecs.toArray();
-        turnAngle = Math.toDegrees(angles[1]);
+    private Point[] getCorners(MatOfPoint contour) {
+        Point[] arr = contour.toArray(), retval = new Point[4];
+        Arrays.sort(arr, new Comparator<Point>() {
+            public int compare(Point p1, Point p2) {
+                return (int)(p1.x + p1.y - (p2.x + p2.y));
+            }
+        });
+        retval[0] = arr[0];
+        retval[3] = arr[arr.length-1];
+        Arrays.sort(arr, new Comparator<Point>() {
+            public int compare(Point p1, Point p2) {
+                return (int)(p1.x - p1.y - (p2.x - p2.y));
+            }
+        });
+        retval[2] = arr[0];
+        retval[1] = arr[arr.length-1];
+        return retval;
     }
+
+    /*private Point centroid(Point[] corners) {
+        Point[] tCentroids = new Point[4];
+        int count = 0;
+        for (int i = 0; i < 2; i++) {
+            for (int j = i+1; j < 3; j++) {
+                for (int k = j+1; k < 4; k++) {
+                    tCentroids[count++] = new Point((corners[i].x + corners[j].x + corners[k].x)/3,
+                                                    (corners[i].y + corners[j].y + corners[k].y)/3);
+                }
+            }
+        }
+        double[] vector1 = {tCentroids[3].x - tCentroids[0].x, tCentroids[3].y - tCentroids[0].y},
+                vector2 = {tCentroids[2].x - tCentroids[1].x, tCentroids[2].y - tCentroids[1].y},
+                vector3 = {tCentroids[2].x - tCentroids[0].x, tCentroids[2].y - tCentroids[0].y};
+
+        double cross = vector1[0] * vector2[1] - vector1[1] * vector2[0];
+        if (Math.abs(cross) < Math.pow(10, -8)) return null;
+        double scalar = (vector3[0] * vector2[1] - vector3[1] * vector2[0])/cross;
+        return new Point(tCentroids[0].x + vector1[0] * scalar, tCentroids[0].y + vector1[1] * scalar);
+    }*/
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

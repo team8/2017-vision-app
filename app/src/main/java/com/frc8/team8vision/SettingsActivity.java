@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.RadioButton;
 import android.widget.Switch;
@@ -35,7 +36,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (tuningMode) toCheck = (RadioButton)findViewById(R.id.tuning_mode);
         toCheck.setChecked(true);
 
-        ((Switch)findViewById(R.id.flashlight)).setChecked(preferences.getBoolean("Flashlight On", false));
+        ((Switch)findViewById(R.id.flashlight)).setChecked(flashlightOn);
 
         for (int i = 0; i < 6; i++) {
             seekBars[i] = new HSVSeekBar(Constants.kSliderIds[i], Constants.kSliderReadoutIds[i],
@@ -54,6 +55,7 @@ public class SettingsActivity extends AppCompatActivity {
     public void onSwitchClicked(View view) {
         SharedPreferences.Editor editor = preferences.edit();
         flashlightOn = !flashlightOn;
+        Log.d("SettingsActivity", "SETTING VALUE TO " + flashlightOn);
         editor.putBoolean("Flashlight On", flashlightOn);
         editor.apply();
     }

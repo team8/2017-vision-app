@@ -27,6 +27,7 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -245,17 +246,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         }
 
         // Identify all contours
-        List<MatOfPoint> contours = new ArrayList<>();
+        ArrayList<MatOfPoint> contours = new ArrayList<>();
         Imgproc.findContours(mask, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
         if (contours.isEmpty()) return input;
-        // Sort contours in decreasing order of area and take largest one
-        Collections.sort(contours, new Comparator<MatOfPoint>() {
-            public int compare(MatOfPoint one, MatOfPoint two) {
-                return Double.compare(contourArea(two), contourArea(one));
-            }
-        });
+        // Since multiple contours may be detected we need to single out the best one
 
-        MatOfPoint contour = contours.get(0);
+        MatOfPoint contour = bestContour(contours);
 
         // Track corners of target
         Point[] corners = getCorners(contour);
@@ -281,6 +277,31 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 xDist), new Point(0, mHeight - 30),
                 Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
+    }
+
+    /**
+     * Remove all contours that are below a certain area threshold. Used to remove salt noise.
+     */
+    private MatOfPoint bestContour(ArrayList<MatOfPoint> contours) {
+        int threshold = 500;
+        for (MatOfPoint contour: contours) {
+            if (Imgproc.contourArea(contour) < threshold) contours.remove(contour);
+        }
+
+        // Were both strips of tape detected?
+        if (contours.size() == 2) {
+            // Calculate bounding rectangles of contours to compare x position
+            Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
+            /*
+             * If the below statement is true, then either contour one is the
+             * left target and we are tracking the right target, or contour one
+             * is the right target and we are tracking the left target. In any
+             * case, contour one needs to be removed.
+             */
+            if (oneRect.x < twoRect.x != SettingsActivity.trackingLeftTarget()) contours.remove(1);
+        }
+        // The optimal contour should be the only one remaining
+        return contours.get(0);
     }
 
     /**

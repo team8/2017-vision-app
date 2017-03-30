@@ -184,11 +184,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
      */
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         synchronized (lock) {
-            imageRGB_raw = inputFrame.rgba().clone();
+			imageRGB = inputFrame.rgba();
+			if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
+			imageRGB = track(imageRGB);
+            imageRGB_raw = imageRGB.clone();
 			Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
-            imageRGB = inputFrame.rgba();
-			if (isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Galaxy camera feed is inverted
-            imageRGB = track(imageRGB);
         }
 
         imageHSV.release();
@@ -261,14 +261,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
         }
 
-        double ratio = (2 * mPPI)/(corners[1].x - corners[0].x);
+        double ratio = (2 * mPPI)/Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x);
 
         double target = (SettingsActivity.trackingLeftTarget()) ? corners[0].x + (Constants.kVisionTargetWidth/2) * mPPI / ratio
                                                                 : corners[1].x - (Constants.kVisionTargetWidth/2) * mPPI / ratio;
 
         Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
 
-        Log.d(TAG, "" + (target - corners[0].x)/mPPI);
+//        Log.d(TAG, "" + (target - corners[0].x)/mPPI);
 
         xDist = (target - mWidth/2)/mPPI * ratio;
 
@@ -283,10 +283,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
      * Remove all contours that are below a certain area threshold. Used to remove salt noise.
      */
     private MatOfPoint bestContour(ArrayList<MatOfPoint> contours) {
-        int threshold = 500;
+        int threshold = 50;
+
+		List<MatOfPoint> found = new ArrayList<MatOfPoint>();
         for (MatOfPoint contour: contours) {
-            if (Imgproc.contourArea(contour) < threshold) contours.remove(contour);
+            if (Imgproc.contourArea(contour) < threshold) found.add(contour);
         }
+        contours.removeAll(found);
 
         // Were both strips of tape detected?
         if (contours.size() == 2) {
@@ -298,8 +301,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
              * is the right target and we are tracking the left target. In any
              * case, contour one needs to be removed.
              */
-            if (oneRect.x < twoRect.x != SettingsActivity.trackingLeftTarget()) contours.remove(1);
+            if (oneRect.x < twoRect.x != SettingsActivity.trackingLeftTarget()) contours.remove(0);
         }
+
+        // If no target found
+		if (contours.size() == 0){
+			return found.get(0);
+		}
+
         // The optimal contour should be the only one remaining
         return contours.get(0);
     }

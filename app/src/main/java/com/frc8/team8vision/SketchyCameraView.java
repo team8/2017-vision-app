@@ -78,11 +78,12 @@ public class SketchyCameraView extends CameraBridgeViewBase implements Camera.Pr
                         mCameraId = i;
                         connected = true;
                     } catch (RuntimeException e) {
-                        Log.e(TAG, "Camera #" + i + "failed to open: " + e.getMessage());
+                        Log.e(TAG, "Camera #" + i + " failed to open: " + e.getMessage());
                     }
                     if (connected) break;
                 }
             }
+            Log.e("WOWOWOWOWOWOWOWOW", "check");
 
             if (mCamera == null) return false;
 

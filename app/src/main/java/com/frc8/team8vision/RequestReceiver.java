@@ -23,6 +23,11 @@ public class RequestReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
+            if (intent.getStringExtra("type").equals("flash")) {
+                // Toggle flashlight
+                boolean isFlash = intent.getBooleanExtra("isFlash", true);
+                MainActivity.toggleFlash(isFlash);
+            }
 //            Log.i("RequestReceiver", "Received request to send data");
             WriteDataThread.getInstance().SendBroadcast();
         } catch (Exception e) {

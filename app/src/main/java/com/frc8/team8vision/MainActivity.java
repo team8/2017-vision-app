@@ -2,6 +2,7 @@ package com.frc8.team8vision;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.audiofx.BassBoost;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -69,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private int mWidth = 0, mHeight = 0, mPPI = 0;
     private int mResolutionFactor = 3;      // Divides screen images by given factor
+
+    private boolean trackingLeft;
 
     /**
      * The delay between starting the app and loading OpenCV libraries means that
@@ -167,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         // Reduce exposure and turn on flashlight - to be used with reflective tape
         mCameraView.setParameters();
-        if (SettingsActivity.flashlightOn()) mCameraView.toggleFlashLight();
+        mCameraView.toggleFlashLight(SettingsActivity.flashlightOn());
 
         WriteDataThread.getInstance().resume();
         JPEGStreamerThread.getInstance().resume();
@@ -188,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
 			imageRGB = track(imageRGB);
             imageRGB_raw = imageRGB.clone();
-			Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
+            if (imageRGB_raw.channels() == 3) Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
         }
 
         imageHSV.release();
@@ -263,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         double ratio = (2 * mPPI)/Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x);
 
-        double target = (SettingsActivity.trackingLeftTarget()) ? corners[0].x + (Constants.kVisionTargetWidth/2) * mPPI / ratio
+        double target = (trackingLeft) ? corners[0].x + (Constants.kVisionTargetWidth/2) * mPPI / ratio
                                                                 : corners[1].x - (Constants.kVisionTargetWidth/2) * mPPI / ratio;
 
         Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
@@ -283,6 +286,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
      * Remove all contours that are below a certain area threshold. Used to remove salt noise.
      */
     private MatOfPoint bestContour(ArrayList<MatOfPoint> contours) {
+        trackingLeft = SettingsActivity.trackingLeftTarget();
         int threshold = 50;
 
 		List<MatOfPoint> found = new ArrayList<MatOfPoint>();
@@ -295,13 +299,32 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         if (contours.size() == 2) {
             // Calculate bounding rectangles of contours to compare x position
             Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
-            /*
-             * If the below statement is true, then either contour one is the
-             * left target and we are tracking the right target, or contour one
-             * is the right target and we are tracking the left target. In any
-             * case, contour one needs to be removed.
+            double oneArea = oneRect.area(), twoArea = twoRect.area();
+            double ratioTolerance = 0.5;
+            /**
+             * If one contour area is a certain ratio of the other, then we can
+             * assume that it's being obscured and track the other one.
+             * If we choose to track the other target, we must determine if it's
+             * on the left or right
              */
-            if (oneRect.x < twoRect.x != SettingsActivity.trackingLeftTarget()) contours.remove(0);
+
+            if (Math.min(oneArea, twoArea) / Math.max(oneArea, twoArea) < ratioTolerance) {
+                if (oneArea <= twoArea) {
+                    if (oneRect.x < twoRect.x) {
+                        trackingLeft = false;
+                        contours.remove(0);
+                    } else {
+                        trackingLeft = true;
+                    }
+                } else {
+                    if (oneRect.x < twoRect.x) {
+                        trackingLeft = true;
+                    } else {
+                        trackingLeft = false;
+                    }
+                }
+                // If the areas don't meet this ratio, stick to the target the app was told to track
+            } else if (oneRect.x < twoRect.x != SettingsActivity.trackingLeftTarget()) contours.remove(0);
         }
 
         // If no target found
@@ -309,7 +332,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			return found.get(0);
 		}
 
-        // The optimal contour should be the only one remaining
+        // The first contour should be the optimal one
         return contours.get(0);
     }
 
@@ -385,7 +408,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public static double getXDisplacement() { return xDist; }
     public static long getCycleTime() { return cycleTime; }
 
-    public static void toggleFlash() {
-		mCameraView.toggleFlashLight();
+    public static void toggleFlash(boolean flashlightOn) {
+        SettingsActivity.setFlashlightOn(flashlightOn);
+		mCameraView.toggleFlashLight(flashlightOn);
 	}
 }

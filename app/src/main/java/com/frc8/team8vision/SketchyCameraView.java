@@ -284,13 +284,13 @@ public class SketchyCameraView extends CameraBridgeViewBase implements Camera.Pr
         mCamera.setParameters(param);
     }
 
-    public void toggleFlashLight() {
+    public void toggleFlashLight(boolean flashlightOn) {
         if (mCamera == null) {
             Log.w(TAG, "Camera not instantiated");
             return;
         }
         Camera.Parameters param = mCamera.getParameters();
-        param.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+        param.setFlashMode((flashlightOn) ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
         mCamera.setParameters(param);
     }
 

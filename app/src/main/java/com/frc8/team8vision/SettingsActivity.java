@@ -20,7 +20,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
 
-    private static boolean trackingLeft, tuningMode, flashlightOn;
+    private static boolean trackingLeft, tuningMode, flashlightOn = true;
 
     private SharedPreferences preferences;
 
@@ -65,5 +65,7 @@ public class SettingsActivity extends AppCompatActivity {
     public static boolean tuningMode() { return tuningMode; }
 
     public static boolean flashlightOn() { return flashlightOn; }
+
+    public static void setFlashlightOn(boolean value) { flashlightOn = value; }
 
 }

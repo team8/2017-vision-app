@@ -57,7 +57,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	// Lock for synchronized access of imageRGB
 	private final Object lock = new Object();
 
-	private static double turnAngle = 0, xDist = 0;
+	private static double turnAngle = 0;
+	private static Double xDist = null;
 	private static long cycleTime = 0;
 
 	private MatOfDouble distCoeffs;
@@ -258,29 +259,33 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		MatOfPoint contour = bestContour(contours, input);
 
-		// Track corners of target
-		Point[] corners = getCorners(contour);
+		if (contour != null) {
+			// Track corners of target
+			Point[] corners = getCorners(contour);
 
-		// Draw corners on image
-		for (int i = 0; i < corners.length; i++) {
-			Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
-		}
+			// Draw corners on image
+			for (int i = 0; i < corners.length; i++) {
+				Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
+			}
 
-		double ratio = (2 * mPPI)/Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x);
+			double ratio = (2 * mPPI)/Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x);
 
-		double target = (trackingLeft) ? corners[0].x + (Constants.kVisionTargetWidth/2) * mPPI / ratio
-																: corners[1].x - (Constants.kVisionTargetWidth/2) * mPPI / ratio;
+			double target = (trackingLeft) ? corners[0].x + (Constants.kVisionTargetWidth/2) * mPPI / ratio
+																	: corners[1].x - (Constants.kVisionTargetWidth/2) * mPPI / ratio;
 
-		Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
+			Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
 
 //        Log.d(TAG, "" + (target - corners[0].x)/mPPI);
 
-		xDist = (target - mWidth/2)/mPPI * ratio;
+			xDist = (target - mWidth/2)/mPPI * ratio;
 
-		Imgproc.putText(input,
-				String.format(Locale.getDefault(), "%.2f",
-				xDist), new Point(0, mHeight - 30),
-				Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
+			Imgproc.putText(input,
+					String.format(Locale.getDefault(), "%.2f",
+					xDist), new Point(0, mHeight - 30),
+					Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
+		} else {
+			xDist = null;
+		}
 		return input;
 	}
 
@@ -332,7 +337,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		// If no target found
 		if (contours.size() == 0){
-			return found.get(0);
+			return null;
 		}
 
 		// The first contour should be the optimal one
@@ -408,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	   return imageRGB_raw;
 	}
 	public static double getTurnAngle() { return turnAngle; }
-	public static double getXDisplacement() { return xDist; }
+	public static Double getXDisplacement() { return xDist; }
 	public static long getCycleTime() { return cycleTime; }
 
 	public static void toggleFlash(boolean flashlightOn) {

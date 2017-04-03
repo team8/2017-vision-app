@@ -23,12 +23,6 @@ public class Constants {
     public static final String[] kSliderNames = {"Minimum Hue", "Minimum Saturation", "Minimum Value",
                                                  "Maximum Hue", "Maximum Saturation", "Maximum Value"};
 
-    // Offset threshold slider constants
-    public static final float kNexusOffsetSlider = R.id.nexusOffsetSlider,
-            kNexusOffsetField = R.id.nexusOffsetField,
-            kOffsetDefaultValue = 0;
-    public static final String kOffsetName = "Offset";
-
     // Physical specs of peg (all measurements are in inches)
     public static final double kVisionTargetWidth = 10.25, kTapeWidth = 2, kVisionTargetHeight = 5.0, kPegLength = 10.5;
 

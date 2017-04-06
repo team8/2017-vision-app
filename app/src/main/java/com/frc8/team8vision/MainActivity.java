@@ -324,16 +324,25 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			 * on the left or right
 			 */
 
-			if (Math.min(oneArea, twoArea) / Math.max(oneArea, twoArea) < ratioTolerance) {
-				if (oneArea <= twoArea) {
-					trackingLeft = oneRect.x >= twoRect.x;
-					contours.remove(0);
-				} else {
-					trackingLeft = oneRect.x < twoRect.x;
-				}
-				// If the areas don't meet this ratio, stick to the target the app was told to track
-			} else if (oneRect.x < twoRect.x != SettingsActivity.trackingLeftTarget()) contours.remove(0);
+//			if (Math.min(oneArea, twoArea) / Math.max(oneArea, twoArea) < ratioTolerance) {
+//				if (oneArea <= twoArea) {
+//					trackingLeft = oneRect.x >= twoRect.x;
+//					contours.remove(0);
+//				} else {
+//					trackingLeft = oneRect.x < twoRect.x;
+//				}
+//				// If the areas don't meet this ratio, stick to the target the app was told to track
+//			} else if (oneRect.x < twoRect.x != trackingLeft) contours.remove(0);
+
+			if (oneArea<=twoArea){
+				trackingLeft = oneRect.x >= twoRect.x;
+				contours.remove(0);
+			} else {
+				trackingLeft = oneRect.x < twoRect.x;
+			}
 		}
+
+		SettingsActivity.setTrackingLeft(trackingLeft);
 
 		// If no target found
 		if (contours.size() == 0){

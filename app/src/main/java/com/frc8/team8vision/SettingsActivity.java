@@ -62,9 +62,11 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static boolean trackingLeftTarget() { return trackingLeft; }
 
-    public static boolean tuningMode() { return tuningMode; }
-
     public static boolean flashlightOn() { return flashlightOn; }
+
+	public static void setTrackingLeft(boolean isTrackingLeft) {trackingLeft = isTrackingLeft;}
+
+    public static boolean tuningMode() { return tuningMode;}
 
     public static void setFlashlightOn(boolean value) { flashlightOn = value; }
 

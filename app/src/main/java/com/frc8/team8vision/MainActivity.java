@@ -193,9 +193,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
 			imageRGB = track(imageRGB);
 			imageRGB_raw = imageRGB.clone();
-			if (imageRGB_raw.channels() == 5){
-				Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
-			}
+//			if (imageRGB_raw.channels() == 5){
+//				Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
+//			}
 		}
 
 		imageHSV.release();
@@ -279,6 +279,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 //        Log.d(TAG, "" + (target - corners[0].x)/mPPI);
 
 			xDist = (target - mWidth/2)/mPPI * ratio;
+			xDist += SettingsActivity.getNexusShift();
 
 			Imgproc.putText(input,
 					String.format(Locale.getDefault(), "%.2f",

@@ -8,4 +8,5 @@
     <string name="target_right">Track right target</string>
     <string name="tuning_mode">Tuning mode</string>
     <string name="flashlight">Flashlight</string>
+    <string name="apply_shift">Apply Shift</string>
 </resources>

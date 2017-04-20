@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private long lastCycleTimestamp = 0;
 
 	private int mWidth = 0, mHeight = 0, mPPI = 0;
+	private double lastZ, lastZ_1, lastX, lastX_1;
 	private int mResolutionFactor = 3;      // Divides screen images by given factor
 
 	private boolean trackingLeft;
@@ -286,8 +287,108 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		} else {
 			xDist = null;
 		}
-		return input;
-	}
+		Imgproc.putText(input,
+                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
+                Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
+        return input;
+    }
+
+    /**
+     * Determines the transformation of a camera relative to the vision target.
+     * The transformation is broken down into rotations and translations along the x, y, and z axes.
+     * Note that the rotation values are accurate while the translations are not - I'm still trying
+     * to figure out how to use the middle of the target as the reference point, instead of the top
+     * left corner.
+     * @param src - corners of the image contained in an array
+     * @param input - the image captured by the camera
+     */
+    public void getPosePnP(Point[] src, Mat input) {
+//        double scalar = mPPI, width = Constants.kTapeWidth * scalar, height = Constants.kVisionTargetHeight * scalar, depth = Constants.kPegLength * scalar;
+//        double leftX = (mWidth - width) / 2, topY = (mHeight - height) / 2, rightX = leftX + width, bottomY = topY + height, z = 0 - 2 * scalar;
+		double scalar = mPPI, width = Constants.kVisionTargetWidth, height = Constants.kVisionTargetHeight,
+				tapeWidth = Constants.kTapeWidth, depth = Constants.kPegLength, conv = 0.0393701 * 12 / 1.95;
+		double leftX, topY, rightX, bottomY;
+		if(trackingLeft){
+			leftX = -width/2;
+			topY = height/2;
+			rightX = leftX+tapeWidth;
+			bottomY = -height/2;
+		}else{
+			rightX = width/2;
+			topY = height/2;
+			leftX = rightX-tapeWidth;
+			bottomY = -height/2;
+		}
+		MatOfPoint2f dstPoints = new MatOfPoint2f();
+        dstPoints.fromArray(src);
+        // In order to calculate the pose, we create a model of the vision targets using 3D coordinates
+        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, 0),
+                                                new Point3(rightX, topY, 0),
+                                                new Point3(leftX, bottomY, 0),
+                                                new Point3(rightX, bottomY, 0));
+        MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
+        Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
+//		Calib3d.solvePnPRansac(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs, false, 100, 8.0f, 0.99, new Mat(), Calib3d.SOLVEPNP_P3P);
+
+		// Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
+//		double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
+//		double zDist = (tvecs.get(2,0)[0] + Constants.kNexusFocalOffsetZ) * Constants.kNexusFocalScaleZ - Constants.kPegLength;
+		double zDist = (tvecs.get(2, 0)[0]) * conv;
+
+        /*
+         * What x position is the peg supposed to be at? This depends on which
+         * target is being tracked - right or left.
+         */
+
+        double pegBaseX = 0, pegTipX = 0, pegPos = -width/2;
+        if (trackingLeft) {
+//            pegBaseX = leftX + width/2;
+			pegTipX = pegBaseX + tapeWidth/2/zDist;
+//			pegPos = width/2;
+//			pegX = leftX;
+        } else {
+//            pegBaseX = rightX - width/2;
+			pegTipX = pegBaseX - tapeWidth/2/zDist;
+//			pegPos = -width/2;
+//			pegX = rightX;
+        }
+
+		// Given the perceived x displacement,
+//        xDist = zDist;
+//        xDist = ((arr[1].x - mWidth / 2) * zDist / 4) / mPPI;
+		double xShift = (tvecs.get(0,0)[0]) * conv;
+		double y = ((lastZ*lastX_1) - (lastZ_1*lastX))/(lastX-lastX_1), l = 61.5;
+		y = 3;
+
+		xDist = pegPos + l*xShift/(y+zDist);
+//		xDist = xShift;
+		xDist += SettingsActivity.getNexusShift();
+		double[] angles = rvecs.toArray();
+		turnAngle = Math.toDegrees(angles[1]);
+
+		lastZ_1 = lastZ; lastX_1 = lastX;
+		lastZ = zDist; lastX = xShift;
+
+        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(pegBaseX, (topY+bottomY)/2, 0),
+                                                new Point3(pegTipX, (topY+bottomY)/2, 1 * depth)
+												,new Point3(0, 0, 0),
+												new Point3(-xDist, tvecs.get(1,0)[0]*conv, tvecs.get(2,0)[0]*conv)
+		);
+
+        MatOfPoint2f result = new MatOfPoint2f();
+        Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
+        Point[] arr = result.toArray();
+
+        // Estimates the position of the base and tip of the peg
+        Imgproc.line(input, arr[0], arr[1], new Scalar(255, 255, 255), 5);
+		Imgproc.line(input, arr[2], arr[3], new Scalar(0, 0, 255), 5);
+
+		for(Point p: arr){
+			Imgproc.circle(input, p, 7, new Scalar(0,255,0));
+		}
+//		Imgproc.circle(input, arr[2], 12, new Scalar(0,0,255));
+    }
+
 
 	/**
 	 * Remove all contours that are below a certain area threshold. Used to remove salt noise.

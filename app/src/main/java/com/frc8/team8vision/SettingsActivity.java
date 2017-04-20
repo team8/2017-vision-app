@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.Switch;
 
@@ -21,6 +23,7 @@ public class SettingsActivity extends AppCompatActivity {
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
 
     private static boolean trackingLeft, tuningMode, flashlightOn = true;
+	private static double nexusShift = 0;
 
     private SharedPreferences preferences;
 
@@ -37,6 +40,16 @@ public class SettingsActivity extends AppCompatActivity {
         toCheck.setChecked(true);
 
         ((Switch)findViewById(R.id.flashlight)).setChecked(flashlightOn);
+
+		final EditText shiftEntry = (EditText) findViewById(R.id.nexusShift);
+		shiftEntry.setText(""+nexusShift);
+		Button applyShift = (Button) findViewById(R.id.applyShift);
+		applyShift.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				nexusShift = (new Double(shiftEntry.getText().toString())).doubleValue();
+			}
+		});
 
         for (int i = 0; i < 6; i++) {
             seekBars[i] = new HSVSeekBar(Constants.kSliderIds[i], Constants.kSliderReadoutIds[i],
@@ -69,5 +82,7 @@ public class SettingsActivity extends AppCompatActivity {
     public static boolean tuningMode() { return tuningMode;}
 
     public static void setFlashlightOn(boolean value) { flashlightOn = value; }
+
+	public static double getNexusShift() {return nexusShift;}
 
 }

@@ -21,6 +21,7 @@ import android.widget.Switch;
 public class SettingsActivity extends AppCompatActivity {
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
+	private HSVSeekBar focusLock = null;
 
     private static boolean trackingLeft, tuningMode, flashlightOn = true;
 	private static double nexusShift = 0;
@@ -55,6 +56,7 @@ public class SettingsActivity extends AppCompatActivity {
             seekBars[i] = new HSVSeekBar(Constants.kSliderIds[i], Constants.kSliderReadoutIds[i],
                                          Constants.kSliderDefaultValues[i], Constants.kSliderNames[i], this);
         }
+        focusLock = new HSVSeekBar(R.id.focus_lock, R.id.focus_lock_info, 0, "Focus Lock Value", this);
     }
 
     public void onRadioButtonClicked(View view) {

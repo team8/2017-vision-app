@@ -142,26 +142,59 @@
 
         </RadioGroup>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/nexusShift"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentStart="true"
+                    android:layout_marginStart="18dp"
+                    android:ems="10"
+                    android:inputType="numberDecimal"/>
+
+                <Button
+                    android:id="@+id/applyShift"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginStart="24dp"
+                    android:layout_toEndOf="@+id/nexusShift"
+                    android:elevation="5dp"
+                    android:text="@string/apply_shift"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/focus_lock_info"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"/>
+
+            <SeekBar
+                android:id="@+id/focus_lock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignTop="@+id/focus_lock"
+                android:layout_marginStart="29dp"
+                android:layout_marginTop="8dp"
+                android:layout_weight="135.39"
+                android:max="100"/>
+
+        </LinearLayout>
+
     </LinearLayout>
 
-   <EditText
-        android:id="@+id/nexusShift"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginStart="18dp"
-        android:ems="10"
-        android:inputType="numberDecimal"/>
-
-    <Button
-        android:id="@+id/applyShift"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="24dp"
-        android:layout_toEndOf="@+id/nexusShift"
-        android:elevation="5dp"
-        android:text="@string/apply_shift"/>
 
 </RelativeLayout>

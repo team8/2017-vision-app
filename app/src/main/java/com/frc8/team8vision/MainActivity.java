@@ -66,6 +66,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private Mat intrinsicMatrix, imageHSV;
 
 	private static SketchyCameraView mCameraView;
+	private static boolean isSettingsPaused = false;
 
 	private long lastCycleTimestamp = 0;
 
@@ -139,17 +140,30 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onPause() {
-		JPEGStreamerThread.getInstance().pause();
-		WriteDataThread.getInstance().pause();
-		super.onPause();
+		if(this.isFocusLocked() && !isSettingsPaused){
+//			Intent intent = new Intent(this, MainActivity.class);
+//			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+//			startActivity(intent);
 
-		if (mCameraView != null) {
-			mCameraView.disableView();
+			Intent intent = new Intent(this, MainActivity.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			intent.setAction(Intent.ACTION_MAIN);
+			intent.addCategory(Intent.CATEGORY_LAUNCHER);
+			startActivity(intent);
+		} else {
+			JPEGStreamerThread.getInstance().pause();
+			WriteDataThread.getInstance().pause();
+			super.onPause();
+
+			if (mCameraView != null) {
+				mCameraView.disableView();
+			}
 		}
 	}
 
 	@Override
 	public void onResume() {
+		isSettingsPaused = false;
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
 	}
@@ -174,8 +188,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.setParameters();
 		mCameraView.toggleFlashLight(SettingsActivity.flashlightOn());
 
-		WriteDataThread.getInstance().resume();
-		JPEGStreamerThread.getInstance().resume();
+		if (!this.isFocusLocked() || isSettingsPaused) {
+			WriteDataThread.getInstance().resume();
+			JPEGStreamerThread.getInstance().resume();
+		}
 	}
 
 	@Override
@@ -209,14 +225,16 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	 * @param input - the image captured by the camera
 	 * @return input - the modified image to show results of processing
 	 */
-	public Mat track(Mat input) {
+	public Mat track(Mat input)
+	{
+		Log.d(TAG, mWidth+"");
 		// Calculates time between method calls; this shows the amount of lag
 		if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
 		lastCycleTimestamp = System.currentTimeMillis();
 
 		Imgproc.putText(input,
-				Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
-				Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
+				Double.toString(cycleTime), new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
+				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
 
 		// Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -264,6 +282,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			// Track corners of target
 			Point[] corners = getCorners(contour);
 
+			getPosePnP(corners, input);
+
 			// Draw corners on image
 			for (int i = 0; i < corners.length; i++) {
 				Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
@@ -281,16 +301,16 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			xDist = (target - mWidth/2)/mPPI * ratio;
 			xDist += SettingsActivity.getNexusShift();
 
-			Imgproc.putText(input,
+			/*Imgproc.putText(input,
 					String.format(Locale.getDefault(), "%.2f",
-					xDist), new Point(0, mHeight - 30),
-					Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
+							zDist), new Point(0, mHeight - 30),
+					Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);*/
 		} else {
 			xDist = null;
 		}
 		Imgproc.putText(input,
-                Double.toString(cycleTime), new Point(mWidth - 200, mHeight - 30),
-                Core.FONT_HERSHEY_SIMPLEX, 3/mResolutionFactor, new Scalar(0, 255, 0), 3);
+                Double.toString(cycleTime), new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
+                Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
     }
 
@@ -334,7 +354,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		// Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
 //		double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
 //		double zDist = (tvecs.get(2,0)[0] + Constants.kNexusFocalOffsetZ) * Constants.kNexusFocalScaleZ - Constants.kPegLength;
-		double zDist = (tvecs.get(2, 0)[0]) * conv;
+		double zDist = (tvecs.get(2, 0)[0]) * conv / 5;
+
+		Imgproc.putText(input,
+				String.format(Locale.getDefault(), "%.2f",
+						zDist), new Point(0, mHeight - 30),
+				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
 
         /*
          * What x position is the peg supposed to be at? This depends on which
@@ -477,7 +502,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		return retval;
 	}
 
-	/*private Point centroid(Point[] corners) {
+	/**private Point centroid(Point[] corners) {
 		Point[] tCentroids = new Point[4];
 		int count = 0;
 		for (int i = 0; i < 2; i++) {
@@ -507,6 +532,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	}
 
 	public void launchSetThresholdActivity(MenuItem item) {
+		isSettingsPaused = true;
 		Intent intent = new Intent(this, SettingsActivity.class);
 		startActivity(intent);
 	}
@@ -524,8 +550,19 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	   return imageRGB_raw;
 	}
 	public static double getTurnAngle() { return turnAngle; }
-	public static Double getXDisplacement() { return xDist; }
+	public static Double getXDisplacement() {
+		if(xDist == null || xDist.isNaN() || xDist.isInfinite()) {
+			return null;
+		}else{
+			return xDist;
+		}
+	}
 	public static long getCycleTime() { return cycleTime; }
+	public boolean isFocusLocked(){
+		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		int lockValue = preferences.getInt("Focus Lock Value", 0);
+		return lockValue >= 80;
+	}
 
 	public static void toggleFlash(boolean flashlightOn) {
 		SettingsActivity.setFlashlightOn(flashlightOn);

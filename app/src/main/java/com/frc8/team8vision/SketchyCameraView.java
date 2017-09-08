@@ -27,7 +27,7 @@ import java.util.List;
 public class SketchyCameraView extends CameraBridgeViewBase implements Camera.PreviewCallback {
 
     private static final int MAGIC_TEXTURE_ID = 10;
-    private static final String TAG = "SketchyCameraView";
+    private static final String TAG = Constants.kTAG+"SketchyCameraView";
 
     private byte mBuffer[];
     private Mat[] mFrameChain;
@@ -83,7 +83,6 @@ public class SketchyCameraView extends CameraBridgeViewBase implements Camera.Pr
                     if (connected) break;
                 }
             }
-            Log.e("WOWOWOWOWOWOWOWOW", "check");
 
             if (mCamera == null) return false;
 
@@ -194,8 +193,10 @@ public class SketchyCameraView extends CameraBridgeViewBase implements Camera.Pr
      */
     /* First step - initialize camera connection */
         Log.d(TAG, "Connecting to camera");
-        if (!initializeCamera(width, height))
+        if (!initializeCamera(width, height)){
+            Log.e(TAG, "Failed to initialize camera");
             return false;
+        }
 
     /* now we can start update thread */
         Log.d(TAG, "Starting processing thread");

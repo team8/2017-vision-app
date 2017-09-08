@@ -102,6 +102,9 @@ public class JPEGStreamerThread implements Runnable {
 		ALIVE, CLOSED
 	}
 
+	// Tag
+	private static final String TAG = Constants.kTAG+"JPEGStreamerThread";
+
 	// Instance and state variables
 	public static JPEGStreamerThread s_instance;
 	private StreamerThreadState m_streamerThreadState = StreamerThreadState.PREINIT;
@@ -154,7 +157,7 @@ public class JPEGStreamerThread implements Runnable {
 	 */
 	private void SetConnectionState(SocketConnectionState state){
 		if(m_socketConnectionState.equals(state)){
-			Log.w("SocketState Warning:", "no change to write state");
+			Log.w(TAG, "SetConenctionState Warning:\n\tno change to write state");
 		}else{
 			m_socketConnectionState = state;
 		}
@@ -164,14 +167,14 @@ public class JPEGStreamerThread implements Runnable {
 	 * (Debug) Logs the Thread state
 	 */
 	private void logThreadState(){
-		Log.d("JSONStreamer State", "ThreadState: "+ m_streamerThreadState);
+		Log.d(TAG, "JSONStreamerThread State: "+ m_streamerThreadState);
 	}
 
 	/**
 	 * (DEBUG) Logs the Write state
 	 */
 	private void logWriteState(){
-		Log.d("SocketState state", "SocketConnectionState: "+ m_socketConnectionState);
+		Log.d(TAG, "SocketConnection State: "+ m_socketConnectionState);
 	}
 
 	/**
@@ -182,17 +185,17 @@ public class JPEGStreamerThread implements Runnable {
 	 */
 	public void start(Activity activity){
 		if(s_instance == null) { // This should never happen
-			Log.e("JSONStreamer Error", "No initialized instance, this should never happen");
+			Log.e(TAG, "start Error:\n\tNo initialized instance, this should never happen");
 			return;
 		}
 
 		if(!m_streamerThreadState.equals(StreamerThreadState.PREINIT)){
-			Log.e("JSONStreamer Error", "Thread has already been initialized");
+			Log.e(TAG, "start JSONStreamer Error:\n\tThread has already been initialized");
 			this.logThreadState();
 		}
 
 		if(m_running){
-			Log.e("JSONStreamer Error", "Thread is already running");
+			Log.e(TAG, "start Error:\n\tThread is already running");
 			return;
 		}
 		m_activity = activity;
@@ -205,7 +208,7 @@ public class JPEGStreamerThread implements Runnable {
 	 */
 	public void pause(){
 		if(!m_running){
-			Log.e("JSONStreamer Error", "Thread is not running");
+			Log.e(TAG, "pause Error:\n\tThread is not running");
 		}
 
 		m_lastThreadState = m_streamerThreadState;
@@ -236,10 +239,10 @@ public class JPEGStreamerThread implements Runnable {
 		}else if(m_streamerThreadState.equals(StreamerThreadState.PREINIT)){  // If thread is initializing, finish initialization
 			this.SetState(StreamerThreadState.INITIALIZE_WRITER);
 
-			Log.i("JSONStreamer Thread", "Starting Thread: JPEGStreamerThread");
+			Log.i(TAG, "resume Info:\n\tStarting Thread: JPEGStreamerThread");
 			(new Thread(this, "JPEGStreamerThread")).start();
 		}else{  // This should never happen
-			Log.e("JSONStreamer Error", "Trying to resume a non-paused Thread");
+			Log.e(TAG, "resume Error:\n\tTrying to resume a non-paused Thread");
 			this.logThreadState();
 		}
 	}
@@ -261,12 +264,12 @@ public class JPEGStreamerThread implements Runnable {
 	}
 
 	private void closeSocket(){
-		Log.w("JSONStreamer Warning", "Time since last sent frame has exceeded the timeout of " +
+		Log.w(TAG, "closeSocket Warning:\n\tTime since last sent frame has exceeded the timeout of " +
 				Constants.kVisionIdleTimeS + ", closing the socket");
 		try {
 			m_socket.close();
 		} catch (IOException e) {
-			Log.e("JSONStreamer Error", "Error while closing the socket: "+e.getStackTrace().toString());
+			Log.e(TAG, "closeSocket Error:\n\tError while closing the socket: "+e.getStackTrace().toString());
 		}
 		this.SetConnectionState(SocketConnectionState.CLOSED);
 	}
@@ -276,19 +279,20 @@ public class JPEGStreamerThread implements Runnable {
 	 * @return The state after execution
 	 */
 	private StreamerThreadState InitializeWriter(){
+//		Log.i(TAG, "InitializeWriter Info:\n\tTrying to initialize writer");
 		// FOR METHODS OTHER THAN JSON WRITING, EDIT
 		switch (m_socketConnectionState){
 			case ALIVE:
-				Log.e("SocketState Error", "Trying to initialize an live writer...");
+				Log.e(TAG, "InitializeWriter Error:\n\tTrying to initialize an live writer...");
 				break;
 			case CLOSED:
 				try {
-					//Log.i("JSONStreamer Socket", "Trying to connect to server");
+					Log.i(TAG, "JSONStreamer Socket:\n\tTrying to connect to server");
 					m_socket = new Socket(Constants.kRIOHostName, Constants.kVisionPortNumber);
-					Log.i("JSONStreamer Socket", "Connected to socket on port "+m_socket.getPort());
+					Log.i(TAG, "JSONStreamer Socket:\n\tConnected to socket on port "+m_socket.getPort());
 					this.SetConnectionState(SocketConnectionState.ALIVE);
 				} catch (IOException e) {
-//					Log.e("JSONStreamer Error", "Socket could not connect, retrying: "+e.getStackTrace().toString());
+					Log.e(TAG, "JSONStreamer Error:\n\tSocket could not connect, retrying: "+e.getStackTrace().toString());
 					return StreamerThreadState.INITIALIZE_WRITER;
 				}
 				break;
@@ -326,7 +330,7 @@ public class JPEGStreamerThread implements Runnable {
 				dos.writeInt(imgdata.length);
 				dos.write(imgdata, 0, imgdata.length);
 			} catch (IOException e) {
-				Log.e("JSONStreamer Error", "Cannot get output stream of socket");
+				Log.e(TAG, "JSONStreamer Error:\n\tCannot get output stream of socket");
 				// This shouldn't happen so idek
 				this.closeSocket();
 			}
@@ -362,7 +366,7 @@ public class JPEGStreamerThread implements Runnable {
 			switch (m_streamerThreadState){
 
 				case PREINIT:   // This should never happen
-					Log.e("JSONStreamer Error", "Thread running, but has not been initialized");
+					Log.e(TAG, "JSONStreamer Error:\n\tThread running, but has not been initialized");
 					break;
 
 				case INITIALIZE_WRITER:

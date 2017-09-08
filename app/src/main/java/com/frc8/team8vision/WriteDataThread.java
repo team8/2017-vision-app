@@ -108,6 +108,9 @@ public class WriteDataThread implements Runnable {
         IDLE, JSON, BROADCAST, BROADCAST_IDLE
     }
 
+    // Tag
+    private static final String TAG = Constants.kTAG+"WriteDataThread";
+
     // Instance and state variables
     public static WriteDataThread s_instance;
     private DataThreadState m_dataThreadState = DataThreadState.PREINIT;
@@ -158,7 +161,7 @@ public class WriteDataThread implements Runnable {
      */
     private void SetWriteState(WriteState state){
         if(m_writeState.equals(state)){
-            Log.w("SocketConnection Error:", "no change to write state");
+            Log.w(TAG, "SetWriteState Error:\n\tno change to write state");
         }else{
             m_writeState = state;
             m_writerInitialized = false;
@@ -170,14 +173,14 @@ public class WriteDataThread implements Runnable {
      * (Debug) Logs the Thread state
      */
     private void logThreadState(){
-        Log.d("WriteDataThread State", "ThreadState: "+m_dataThreadState);
+        Log.d(TAG, "WriteDataThread State: "+m_dataThreadState);
     }
 
     /**
      * (DEBUG) Logs the Write state
      */
     private void logWriteState(){
-        Log.d("SocketConnection state", "SocketConnectionState: "+m_writeState);
+        Log.d(TAG, "SocketConnection State: "+m_writeState);
     }
 
     /**
@@ -188,22 +191,22 @@ public class WriteDataThread implements Runnable {
      */
     public void start(Activity activity, WriteState writeState){
         if(s_instance == null) { // This should never happen
-            Log.e("WriteDataThread Error", "No initialized instance, this should never happen");
+            Log.e(TAG, "start Error:\n\tNo initialized instance, this should never happen");
             return;
         }
 
         if(!m_dataThreadState.equals(DataThreadState.PREINIT)){
-            Log.e("WriteDataThread Error", "Thread has already been initialized");
+            Log.e(TAG, "start Error:\n\tThread has already been initialized");
             this.logThreadState();
         }
 
         if(!m_writeState.equals(WriteState.IDLE)){
-            Log.e("SocketConnection Error", "Already in a writing state");
+            Log.e(TAG, "start SocketConnection Error:\n\tAlready in a writing state");
             this.logWriteState();
         }
 
         if(m_running){
-            Log.e("WriteDataThread Error", "Thread is already running");
+            Log.e(TAG, "start Error:\n\tThread is already running");
             return;
         }
         m_activity = activity;
@@ -218,7 +221,7 @@ public class WriteDataThread implements Runnable {
      */
     public void SendBroadcast(){
         if(!m_writeState.equals(WriteState.BROADCAST_IDLE)){
-            Log.e("SocketConnection Error", "Trying to send broadcast when thread is not waiting to send");
+            Log.e(TAG, "SendBroadcast Error:\n\tTrying to send broadcast when thread is not waiting to send");
         }else{
             m_writeState = WriteState.BROADCAST;
         }
@@ -230,7 +233,7 @@ public class WriteDataThread implements Runnable {
      */
     public void pause(){
         if(!m_running){
-            Log.e("WriteDataThread Error", "Thread is not running");
+            Log.e(TAG, "pause Error:\n\tThread is not running");
         }
 
         m_lastThreadState = m_dataThreadState;
@@ -264,10 +267,10 @@ public class WriteDataThread implements Runnable {
             m_writeState = WriteState.IDLE;
             this.SetWriteState(newState);
 
-            Log.i("WriteDataThread Thread", "Starting Thread: WriteDataThread");
+            Log.i(TAG, "resume Info:\n\tStarting Thread: WriteDataThread");
             (new Thread(this, "WriteDataThread")).start();
         }else{  // This should never happen
-            Log.e("WriteDataThread Error", "Trying to resume a non-paused Thread");
+            Log.e(TAG, "resume Error:\n\tTrying to resume a non-paused Thread");
             this.logThreadState();
         }
     }
@@ -295,13 +298,13 @@ public class WriteDataThread implements Runnable {
         // FOR METHODS OTHER THAN JSON WRITING, EDIT
         switch (m_writeState){
             case IDLE:
-                Log.e("SocketConnection Error", "Trying to initialize an idle writer...");
+                Log.e(TAG, "InitializeWriter Error:\n\tTrying to initialize an idle writer...");
                 return DataThreadState.INITIALIZE_WRITER;
             case JSON:
-                Log.i("SocketConnection Info", "Initalizing JSON writer");
+                Log.i(TAG, "InitializeWriter Info:\n\tInitalizing JSON writer");
                 break;  // Nothing to do for JSON mode
             case BROADCAST:
-                Log.i("SocketConnection Info", "Initializing Broadcast writer");
+                Log.i(TAG, "InitializeWriter Info:\n\tInitializing Broadcast writer");
                 break;
         }
         return DataThreadState.WRITING;
@@ -315,6 +318,7 @@ public class WriteDataThread implements Runnable {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("state", "STREAMING");
         data.put("x_displacement", MainActivity.getXDisplacement());
+        data.put("z_displacement", MainActivity.getZDisplacement());
         writeData(data);
 
         return m_dataThreadState;
@@ -388,7 +392,7 @@ public class WriteDataThread implements Runnable {
             osw.write(json.toString());
             osw.close();
         } catch (IOException e){
-            Log.e("Exception", "Could not write data" + e.toString());
+            Log.e(TAG, "writeJSON Error:\n\tCould not write data" + e.toString());
         }
     }
 
@@ -398,12 +402,11 @@ public class WriteDataThread implements Runnable {
      */
     private void writeSocket(JSONObject json){
         try {
-//            Log.d("-----WriteSocket-----", "Opening socket on "+ m_hostName +":"+ m_RIOPort);
+//            Log.d(TAG, "writeSocket Debug:\n\tOpening socket on "+ m_hostName +":"+ m_RIOPort);
             Socket socket = new Socket(Constants.kRIOHostName, Constants.kDataPortNumber);
-//            Log.d("-----WriteSocket-----", "Socket Opened");
+//            Log.d(TAG, "writeSocket Debug:\n\tSocket Opened");
             OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
             out.write(json.toString());
-//            Log.d("-----JSON-----", json.toString());
             out.flush();
             out.close();
             socket.close();
@@ -432,7 +435,7 @@ public class WriteDataThread implements Runnable {
             switch (m_dataThreadState){
 
                 case PREINIT:   // This should never happen
-                    Log.e("WriteDataThread Error", "Thread running, but has not been initialized");
+                    Log.e(TAG, "WriteDataThread Error:\n\tThread running, but has not been initialized");
                     break;
 
                 case INITIALIZE_WRITER:

@@ -50,7 +50,7 @@ import static org.opencv.imgproc.Imgproc.contourArea;
  */
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-	private static final String TAG = "MainActivity";
+	private static final String TAG = Constants.kTAG+"MainActivity";
 
 	private static Mat imageRGB;
 	private static Mat imageRGB_raw;
@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private final Object lock = new Object();
 
 	private static double turnAngle = 0;
-	private static Double xDist = null;
+	private static Double xDist = null, zDist = null;
 	private static long cycleTime = 0;
 
 	private MatOfDouble distCoeffs;
@@ -133,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		setContentView(mCameraView);
 		mCameraView.setCvCameraViewListener(this);
 		mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
+		trackingLeft = SettingsActivity.trackingLeftTarget();
 
 		WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
 		JPEGStreamerThread.getInstance().start(this);
@@ -140,17 +141,17 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onPause() {
-		if(this.isFocusLocked() && !isSettingsPaused){
+//		if(this.isFocusLocked() && !isSettingsPaused){
 //			Intent intent = new Intent(this, MainActivity.class);
 //			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);
 //			startActivity(intent);
 
-			Intent intent = new Intent(this, MainActivity.class);
-			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			intent.setAction(Intent.ACTION_MAIN);
-			intent.addCategory(Intent.CATEGORY_LAUNCHER);
-			startActivity(intent);
-		} else {
+//			Intent intent = new Intent(this, MainActivity.class);
+//			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//			intent.setAction(Intent.ACTION_MAIN);
+//			intent.addCategory(Intent.CATEGORY_LAUNCHER);
+//			startActivity(intent);
+//		} else {
 			JPEGStreamerThread.getInstance().pause();
 			WriteDataThread.getInstance().pause();
 			super.onPause();
@@ -158,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			if (mCameraView != null) {
 				mCameraView.disableView();
 			}
-		}
+//		}
 	}
 
 	@Override
@@ -166,6 +167,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		isSettingsPaused = false;
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
+		WriteDataThread.getInstance().resume();
+		JPEGStreamerThread.getInstance().resume();
 	}
 
 	public void onDestroy() {
@@ -227,14 +230,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	 */
 	public Mat track(Mat input)
 	{
-		Log.d(TAG, mWidth+"");
 		// Calculates time between method calls; this shows the amount of lag
 		if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
 		lastCycleTimestamp = System.currentTimeMillis();
-
-		Imgproc.putText(input,
-				Double.toString(cycleTime), new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
-				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
 
 		// Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -308,9 +306,18 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		} else {
 			xDist = null;
 		}
+		String printval = "<"+
+				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist.doubleValue()) : "NaN") + ", " +
+				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist.doubleValue()) : "NaN") + ">";
+		Imgproc.putText(input, printval
+				, new Point(0, mHeight - 30),
+				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
 		Imgproc.putText(input,
                 Double.toString(cycleTime), new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
                 Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
+		Imgproc.putText(input,
+				Double.toString(cycleTime), new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
+				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
     }
 
@@ -354,12 +361,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		// Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
 //		double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
 //		double zDist = (tvecs.get(2,0)[0] + Constants.kNexusFocalOffsetZ) * Constants.kNexusFocalScaleZ - Constants.kPegLength;
-		double zDist = (tvecs.get(2, 0)[0]) * conv / 5;
-
-		Imgproc.putText(input,
-				String.format(Locale.getDefault(), "%.2f",
-						zDist), new Point(0, mHeight - 30),
-				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
+		zDist = (tvecs.get(2, 0)[0]) * conv;
 
         /*
          * What x position is the peg supposed to be at? This depends on which
@@ -426,8 +428,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 				return Double.compare(Imgproc.contourArea(two), Imgproc.contourArea(one));
 			}
 		});
-		trackingLeft = SettingsActivity.trackingLeftTarget();
-		double threshold = 0.2 * Imgproc.contourArea(contours.get(0));
+//		trackingLeft = SettingsActivity.trackingLeftTarget();
+		double threshold = 0.4 * Imgproc.contourArea(contours.get(0));
 
 		List<MatOfPoint> found = new ArrayList<MatOfPoint>();
 		for (MatOfPoint contour: contours) {
@@ -437,7 +439,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		Imgproc.drawContours(input, found, -1, new Scalar(0, 0, 255));
 
 		// Were both strips of tape detected?
-		if (contours.size() == 2) {
+		if (contours.size() >= 2) {
 			Imgproc.drawContours(input, contours, 0, new Scalar(255, 0, 0));
 			Imgproc.drawContours(input, contours, 1, new Scalar(0, 255, 0));
 			// Calculate bounding rectangles of contours to compare x position
@@ -547,7 +549,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	// Getter methods allowing the networking utility classes to retrieve data
 
 	public static Mat getImage() {
-	   return imageRGB_raw;
+		if (imageRGB_raw != null && imageRGB_raw.channels()<=4){
+			Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_BGRA2RGBA);
+		}
+		return imageRGB_raw;
 	}
 	public static double getTurnAngle() { return turnAngle; }
 	public static Double getXDisplacement() {
@@ -555,6 +560,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			return null;
 		}else{
 			return xDist;
+		}
+	}
+	public static Double getZDisplacement() {
+		if(zDist == null || zDist.isNaN() || zDist.isInfinite()) {
+			return null;
+		}else{
+			return zDist;
 		}
 	}
 	public static long getCycleTime() { return cycleTime; }

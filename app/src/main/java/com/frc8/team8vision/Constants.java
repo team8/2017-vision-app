@@ -7,6 +7,9 @@ package com.frc8.team8vision;
  */
 public class Constants {
 
+    // Universal logging tag
+    public static final String kTAG = "FRC8.";
+
     // roboRIO networking constants
     public static final String kRIOHostName = "localhost";
     public static final int kDataPortNumber = 8008;

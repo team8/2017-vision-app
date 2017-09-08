@@ -23,7 +23,7 @@ public class SettingsActivity extends AppCompatActivity {
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
 	private HSVSeekBar focusLock = null;
 
-    private static boolean trackingLeft, tuningMode, flashlightOn = true;
+    private static boolean trackingLeft, tuningMode, flashlightOn = false;
 	private static double nexusShift = 0;
 
     private SharedPreferences preferences;
@@ -36,6 +36,7 @@ public class SettingsActivity extends AppCompatActivity {
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         trackingLeft = preferences.getBoolean("Tracking Left", true);
+		nexusShift = preferences.getFloat("Nexus Shift", 0.0f);
         RadioButton toCheck = (RadioButton)findViewById(((trackingLeft) ? R.id.target_left : R.id.target_right));
         if (tuningMode) toCheck = (RadioButton)findViewById(R.id.tuning_mode);
         toCheck.setChecked(true);
@@ -48,7 +49,10 @@ public class SettingsActivity extends AppCompatActivity {
 		applyShift.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				SharedPreferences.Editor editor = preferences.edit();
 				nexusShift = (new Double(shiftEntry.getText().toString())).doubleValue();
+				editor.putFloat("Nexus Shift", (float)nexusShift);
+				editor.apply();
 			}
 		});
 

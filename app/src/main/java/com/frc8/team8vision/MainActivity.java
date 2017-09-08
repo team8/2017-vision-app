@@ -54,8 +54,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	private static Mat imageRGB;
 	private static Mat imageRGB_raw;
-	// Lock for synchronized access of imageRGB
-	private final Object lock = new Object();
 
 	private static double turnAngle = 0;
 	private static Double xDist = null, zDist = null;
@@ -71,7 +69,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private long lastCycleTimestamp = 0;
 
 	private int mWidth = 0, mHeight = 0, mPPI = 0;
-	private double lastZ, lastZ_1, lastX, lastX_1;
+	private int[] sliderValues = new int[6];
 	private int mResolutionFactor = 3;      // Divides screen images by given factor
 
 	private boolean trackingLeft;
@@ -141,25 +139,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onPause() {
-//		if(this.isFocusLocked() && !isSettingsPaused){
-//			Intent intent = new Intent(this, MainActivity.class);
-//			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//			startActivity(intent);
+		JPEGStreamerThread.getInstance().pause();
+		WriteDataThread.getInstance().pause();
+		super.onPause();
 
-//			Intent intent = new Intent(this, MainActivity.class);
-//			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//			intent.setAction(Intent.ACTION_MAIN);
-//			intent.addCategory(Intent.CATEGORY_LAUNCHER);
-//			startActivity(intent);
-//		} else {
-			JPEGStreamerThread.getInstance().pause();
-			WriteDataThread.getInstance().pause();
-			super.onPause();
-
-			if (mCameraView != null) {
-				mCameraView.disableView();
-			}
-//		}
+		if (mCameraView != null) {
+			mCameraView.disableView();
+		}
 	}
 
 	@Override
@@ -167,19 +153,21 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		isSettingsPaused = false;
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
+		setSliderValues();
 		WriteDataThread.getInstance().resume();
 		JPEGStreamerThread.getInstance().resume();
 	}
 
 	public void onDestroy() {
+		WriteDataThread.getInstance().destroy();
+		JPEGStreamerThread.getInstance().destroy();
+
 		super.onDestroy();
 
 		if (mCameraView != null) {
 			mCameraView.disableView();
 			if (imageHSV != null) imageHSV.release();
 		}
-		WriteDataThread.getInstance().destroy();
-		JPEGStreamerThread.getInstance().destroy();
 	}
 
 	@Override
@@ -191,30 +179,26 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.setParameters();
 		mCameraView.toggleFlashLight(SettingsActivity.flashlightOn());
 
-		if (!this.isFocusLocked() || isSettingsPaused) {
+		if (!this.isFocusLocked() || !isSettingsPaused) {
 			WriteDataThread.getInstance().resume();
 			JPEGStreamerThread.getInstance().resume();
 		}
 	}
 
 	@Override
-	public void onCameraViewStopped() {
-	}
+	public void onCameraViewStopped() {}
 
-	@Override
 	/**
 	 * Automatically called before each image frame is displayed. This is where
 	 * the app begins to process the image
 	 */
+	@Override
 	public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-		synchronized (lock) {
+		synchronized (this) {
 			imageRGB = inputFrame.rgba();
 			if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
 			imageRGB = track(imageRGB);
 			imageRGB_raw = imageRGB.clone();
-//			if (imageRGB_raw.channels() == 5){
-//				Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_RGBA2BGRA);
-//			}
 		}
 
 		imageHSV.release();
@@ -225,61 +209,44 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	/**
 	 * Detects the vision targets through HSV filtering and calls getPosePnP to
 	 * estimate camera pose.
+	 *
+	 * The app detects vision targets by applying an HSV threshold to the image.
+	 * This takes a range of possible hues, a range of possible saturations, and
+	 * a range of possible values in the HSV colorspace, and finds all pixels that
+	 * fall in these possible values. The result is a black and white image where
+	 * pixels in the range are white and others are black.
+	 *
 	 * @param input - the image captured by the camera
 	 * @return input - the modified image to show results of processing
 	 */
-	public Mat track(Mat input)
-	{
+	public Mat track(Mat input) {
 		// Calculates time between method calls; this shows the amount of lag
 		if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
 		lastCycleTimestamp = System.currentTimeMillis();
 
-		// Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		int[] sliderValues = new int[6];
-		for (int i = 0; i < 6; i++) {
-			sliderValues[i] = preferences.getInt(Constants.kSliderNames[i], Constants.kSliderDefaultValues[i]);
-		}
-
-		/*
-		 * The app detects vision targets by applying an HSV threshold to the image.
-		 * This takes a range of possible hues, a range of possible saturations, and
-		 * a range of possible values in the HSV colorspace, and finds all pixels that
-		 * fall in these possible values. The result is a black and white image where
-		 * pixels in the range are white and others are black.
-		 */
 		Mat mask = new Mat();
 
-		// Lower and upper hsv thresholds
+		// Create mask from hsv threshold
 		Scalar lower_bound = new Scalar(sliderValues[0], sliderValues[1], sliderValues[2]),
 				upper_bound = new Scalar(sliderValues[3], sliderValues[4], sliderValues[5]);
-
-		// Convert RGB to HSV
 		Imgproc.cvtColor(input, imageHSV, Imgproc.COLOR_RGB2HSV);
-		// Apply threshold
 		Core.inRange(imageHSV, lower_bound, upper_bound, mask);
-
 
 		// Tuning mode displays the result of the threshold
 		if (SettingsActivity.tuningMode()) {
-			// Normalize and scale binary mask so it can be displayed
 			Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
 			Core.convertScaleAbs(mask, mask);
 			return mask;
 		}
 
-		// Identify all contours
+		// Find the peg target contour
 		ArrayList<MatOfPoint> contours = new ArrayList<>();
 		Imgproc.findContours(mask, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 		if (contours.isEmpty()) return input;
-		// Since multiple contours may be detected we need to single out the best one
-
 		MatOfPoint contour = bestContour(contours, input);
 
 		if (contour != null) {
-			// Track corners of target
 			Point[] corners = getCorners(contour);
-
 			getPosePnP(corners, input);
 
 			// Draw corners on image
@@ -287,37 +254,25 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 				Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
 			}
 
-			double ratio = (2 * mPPI)/Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x);
-
-			double target = (trackingLeft) ? corners[0].x + (Constants.kVisionTargetWidth/2) * mPPI / ratio
-																	: corners[1].x - (Constants.kVisionTargetWidth/2) * mPPI / ratio;
+			double ratio = Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x)/2;
+			double target = (trackingLeft) ? corners[0].x + (Constants.kVisionTargetWidth/2) * ratio
+																	: corners[1].x - (Constants.kVisionTargetWidth/2) * ratio;
 
 			Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
+			xDist = (target - mWidth/2) / ratio + SettingsActivity.getNexusShift();
 
-//        Log.d(TAG, "" + (target - corners[0].x)/mPPI);
-
-			xDist = (target - mWidth/2)/mPPI * ratio;
-			xDist += SettingsActivity.getNexusShift();
-
-			/*Imgproc.putText(input,
-					String.format(Locale.getDefault(), "%.2f",
-							zDist), new Point(0, mHeight - 30),
-					Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);*/
 		} else {
 			xDist = null;
 		}
+
 		String printval = "<"+
 				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist.doubleValue()) : "NaN") + ", " +
 				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist.doubleValue()) : "NaN") + ">";
-		Imgproc.putText(input, printval
-				, new Point(0, mHeight - 30),
+		Imgproc.putText(input, printval, new Point(0, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
-		Imgproc.putText(input,
-                Double.toString(cycleTime), new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
+		Imgproc.putText(input, Double.toString(cycleTime),
+				new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
                 Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
-		Imgproc.putText(input,
-				Double.toString(cycleTime), new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
-				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
     }
 
@@ -331,9 +286,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
      * @param input - the image captured by the camera
      */
     public void getPosePnP(Point[] src, Mat input) {
-//        double scalar = mPPI, width = Constants.kTapeWidth * scalar, height = Constants.kVisionTargetHeight * scalar, depth = Constants.kPegLength * scalar;
-//        double leftX = (mWidth - width) / 2, topY = (mHeight - height) / 2, rightX = leftX + width, bottomY = topY + height, z = 0 - 2 * scalar;
-		double scalar = mPPI, width = Constants.kVisionTargetWidth, height = Constants.kVisionTargetHeight,
+		double width = Constants.kVisionTargetWidth, height = Constants.kVisionTargetHeight,
 				tapeWidth = Constants.kTapeWidth, depth = Constants.kPegLength, conv = 0.0393701 * 12 / 1.95;
 		double leftX, topY, rightX, bottomY;
 		if(trackingLeft){
@@ -356,51 +309,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                                                 new Point3(rightX, bottomY, 0));
         MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
         Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
-//		Calib3d.solvePnPRansac(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs, false, 100, 8.0f, 0.99, new Mat(), Calib3d.SOLVEPNP_P3P);
-
-		// Convert the z translation to inches and subtract by the peg length to get distance from the peg tip
-//		double zDist = (tvecs.get(2, 0)[0] + Constants.kGalaxyFocalLengthZ) / 2231 - Constants.kPegLength;
-//		double zDist = (tvecs.get(2,0)[0] + Constants.kNexusFocalOffsetZ) * Constants.kNexusFocalScaleZ - Constants.kPegLength;
 		zDist = (tvecs.get(2, 0)[0]) * conv;
 
-        /*
-         * What x position is the peg supposed to be at? This depends on which
-         * target is being tracked - right or left.
-         */
-
-        double pegBaseX = 0, pegTipX = 0, pegPos = -width/2;
-        if (trackingLeft) {
-//            pegBaseX = leftX + width/2;
-			pegTipX = pegBaseX + tapeWidth/2/zDist;
-//			pegPos = width/2;
-//			pegX = leftX;
-        } else {
-//            pegBaseX = rightX - width/2;
-			pegTipX = pegBaseX - tapeWidth/2/zDist;
-//			pegPos = -width/2;
-//			pegX = rightX;
-        }
-
-		// Given the perceived x displacement,
-//        xDist = zDist;
-//        xDist = ((arr[1].x - mWidth / 2) * zDist / 4) / mPPI;
-		double xShift = (tvecs.get(0,0)[0]) * conv;
-		double y = ((lastZ*lastX_1) - (lastZ_1*lastX))/(lastX-lastX_1), l = 61.5;
-		y = 3;
-
-		xDist = pegPos + l*xShift/(y+zDist);
-//		xDist = xShift;
-		xDist += SettingsActivity.getNexusShift();
-		double[] angles = rvecs.toArray();
-		turnAngle = Math.toDegrees(angles[1]);
-
-		lastZ_1 = lastZ; lastX_1 = lastX;
-		lastZ = zDist; lastX = xShift;
-
-        MatOfPoint3f newPoints = new MatOfPoint3f(new Point3(pegBaseX, (topY+bottomY)/2, 0),
-                                                new Point3(pegTipX, (topY+bottomY)/2, 1 * depth)
-												,new Point3(0, 0, 0),
-												new Point3(-xDist, tvecs.get(1,0)[0]*conv, tvecs.get(2,0)[0]*conv)
+        MatOfPoint3f newPoints = new MatOfPoint3f(
+        		new Point3(0, 0, zDist),
+				new Point3(0, 0, 0)
 		);
 
         MatOfPoint2f result = new MatOfPoint2f();
@@ -409,12 +322,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
         // Estimates the position of the base and tip of the peg
         Imgproc.line(input, arr[0], arr[1], new Scalar(255, 255, 255), 5);
-		Imgproc.line(input, arr[2], arr[3], new Scalar(0, 0, 255), 5);
 
 		for(Point p: arr){
 			Imgproc.circle(input, p, 7, new Scalar(0,255,0));
 		}
-//		Imgproc.circle(input, arr[2], 12, new Scalar(0,0,255));
     }
 
 
@@ -428,7 +339,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 				return Double.compare(Imgproc.contourArea(two), Imgproc.contourArea(one));
 			}
 		});
-//		trackingLeft = SettingsActivity.trackingLeftTarget();
 		double threshold = 0.4 * Imgproc.contourArea(contours.get(0));
 
 		List<MatOfPoint> found = new ArrayList<MatOfPoint>();
@@ -445,23 +355,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			// Calculate bounding rectangles of contours to compare x position
 			Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
 			double oneArea = oneRect.area(), twoArea = twoRect.area();
-			double ratioTolerance = 0.5;
-			/**
-			 * If one contour area is a certain ratio of the other, then we can
-			 * assume that it's being obscured and track the other one.
-			 * If we choose to track the other target, we must determine if it's
-			 * on the left or right
-			 */
-
-//			if (Math.min(oneArea, twoArea) / Math.max(oneArea, twoArea) < ratioTolerance) {
-//				if (oneArea <= twoArea) {
-//					trackingLeft = oneRect.x >= twoRect.x;
-//					contours.remove(0);
-//				} else {
-//					trackingLeft = oneRect.x < twoRect.x;
-//				}
-//				// If the areas don't meet this ratio, stick to the target the app was told to track
-//			} else if (oneRect.x < twoRect.x != trackingLeft) contours.remove(0);
 
 			if (oneArea<=twoArea){
 				trackingLeft = oneRect.x >= twoRect.x;
@@ -504,27 +397,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		return retval;
 	}
 
-	/**private Point centroid(Point[] corners) {
-		Point[] tCentroids = new Point[4];
-		int count = 0;
-		for (int i = 0; i < 2; i++) {
-			for (int j = i+1; j < 3; j++) {
-				for (int k = j+1; k < 4; k++) {
-					tCentroids[count++] = new Point((corners[i].x + corners[j].x + corners[k].x)/3,
-													(corners[i].y + corners[j].y + corners[k].y)/3);
-				}
-			}
+	private void setSliderValues(){
+		// Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
+		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		for (int i = 0; i < 6; i++) {
+			sliderValues[i] = preferences.getInt(Constants.kSliderNames[i], Constants.kSliderDefaultValues[i]);
 		}
-		double[] vector1 = {tCentroids[3].x - tCentroids[0].x, tCentroids[3].y - tCentroids[0].y},
-				vector2 = {tCentroids[2].x - tCentroids[1].x, tCentroids[2].y - tCentroids[1].y},
-				vector3 = {tCentroids[2].x - tCentroids[0].x, tCentroids[2].y - tCentroids[0].y};
-
-		double cross = vector1[0] * vector2[1] - vector1[1] * vector2[0];
-		if (Math.abs(cross) < Math.pow(10, -8)) return null;
-		double scalar = (vector3[0] * vector2[1] - vector3[1] * vector2[0])/cross;
-		return new Point(tCentroids[0].x + vector1[0] * scalar, tCentroids[0].y + vector1[1] * scalar);
-	}*/
-
+	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {

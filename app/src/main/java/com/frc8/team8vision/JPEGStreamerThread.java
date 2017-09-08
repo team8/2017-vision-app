@@ -279,7 +279,6 @@ public class JPEGStreamerThread implements Runnable {
 	 * @return The state after execution
 	 */
 	private StreamerThreadState InitializeWriter(){
-//		Log.i(TAG, "InitializeWriter Info:\n\tTrying to initialize writer");
 		// FOR METHODS OTHER THAN JSON WRITING, EDIT
 		switch (m_socketConnectionState){
 			case ALIVE:
@@ -319,7 +318,7 @@ public class JPEGStreamerThread implements Runnable {
 
 			// If the socket is closed, reopen
 			if(m_socketConnectionState.equals(SocketConnectionState.CLOSED)){
-				InitializeWriter();
+				return  StreamerThreadState.INITIALIZE_WRITER;
 			}
 
 			try {
@@ -345,9 +344,6 @@ public class JPEGStreamerThread implements Runnable {
 		if (imageRGB == null || imageRGB.empty()) {
 			return null;
 		}
-
-		// Resize image for smaller streaming size
-//		Imgproc.resize(imageRGB, imageRGB, new Size(320, 180));
 
 		// Convert Mat to JPEG byte array
 		MatOfByte bytemat = new MatOfByte();

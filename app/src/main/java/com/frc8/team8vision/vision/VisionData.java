@@ -18,6 +18,9 @@ public class VisionData<T> {
 	public void set(T value){
 		this.data = value;
 	}
+	public void set(VisionData<T> v_data){
+		this.data = v_data.get();
+	}
 	public void setToDefault(){
 		this.data = this.default_value;
 	}

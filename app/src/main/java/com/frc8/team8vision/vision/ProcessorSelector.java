@@ -17,24 +17,10 @@ public class ProcessorSelector {
 		CENTROID, SINGLE_TARGET
 	};
 
-	protected int mHeight, mWidth;
-	protected Boolean trackingLeft;
-
-	protected Mat intrinsicMatrix;
-	protected MatOfDouble distCoeffs;
-
-	private HashMap<ProcessorType, AbstractVisionProcessor> processor_map = new HashMap<ProcessorType, AbstractVisionProcessor>();
+	private HashMap<ProcessorType, VisionProcessorBase> processor_map = new HashMap<ProcessorType, VisionProcessorBase>();
 	private ProcessorType processor = null;
 
-	public ProcessorSelector(int height, int width, Mat intrinsics, MatOfDouble distortion, boolean isTrackingLeft){
-		mHeight = height;
-		mWidth = width;
-		intrinsicMatrix = intrinsics;
-		distCoeffs = distortion;
-		trackingLeft = isTrackingLeft;
-	}
-
-	public AbstractVisionProcessor getProcessor(){
+	public VisionProcessorBase getProcessor(){
 		if(processor == null){
 			this.setProcessor(ProcessorType.CENTROID);
 		}
@@ -46,10 +32,10 @@ public class ProcessorSelector {
 		if(!processor_map.containsKey(type)){
 			switch (type){
 				case CENTROID:
-					processor_map.put(type, new CentroidProcessor(mHeight, mWidth, intrinsicMatrix, distCoeffs, trackingLeft));
+					processor_map.put(type, new CentroidProcessor());
 					break;
 				case SINGLE_TARGET:
-					processor_map.put(type, new SingleTargetProcessor(mHeight, mWidth, intrinsicMatrix, distCoeffs, trackingLeft));
+					processor_map.put(type, new SingleTargetProcessor());
 					break;
 			}
 		}

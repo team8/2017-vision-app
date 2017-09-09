@@ -13,10 +13,11 @@ import android.view.MenuItem;
 
 import com.frc8.team8vision.networking.JPEGStreamerThread;
 import com.frc8.team8vision.networking.WriteDataThread;
-import com.frc8.team8vision.vision.AbstractVisionProcessor;
+import com.frc8.team8vision.vision.CameraInfo;
+import com.frc8.team8vision.vision.DataExistsCallback;
+import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
 import com.frc8.team8vision.vision.VisionData;
-import com.frc8.team8vision.vision.processors.CentroidProcessor;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -44,13 +45,23 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private static Mat imageRGB;
 	private static Mat imageRGB_raw;
 
-	private static VisionData<Double> xDist = null, zDist = null;
+	private static VisionData<Double> xDist = new VisionData<>(Double.NaN, Double.NaN, new DataExistsCallback<Double>() {
+		@Override
+		public boolean doesExist(Double data) {
+			return !(data == null || data.isNaN() || data.isInfinite());
+		}
+	});
+	private static VisionData<Double> zDist = new VisionData<>(Double.NaN, Double.NaN, new DataExistsCallback<Double>() {
+		@Override
+		public boolean doesExist(Double data) {
+			return !(data == null || data.isNaN() || data.isInfinite());
+		}
+	});
 	private static long cycleTime = 0;
 
 	private ProcessorSelector visionProcessor;
 
-	private MatOfDouble distCoeffs;
-	private Mat intrinsicMatrix, imageHSV;
+	private Mat imageHSV;
 
 	private static SketchyCameraView mCameraView;
 	private static boolean isSettingsPaused = false;
@@ -69,6 +80,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 		@Override
 		public void onManagerConnected(int status) {
+			Mat intrinsicMatrix = null;
+			MatOfDouble distCoeffs = null;
+
 			switch (status) {
 				case LoaderCallbackInterface.SUCCESS: {
 					Log.i(TAG, "OpenCV load success");
@@ -108,6 +122,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 					super.onManagerConnected(status);
 				} break;
 			}
+
+			CameraInfo.setIntrinsics(intrinsicMatrix);
+			CameraInfo.setDistortion(distCoeffs);
 		}
 	};
 
@@ -120,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.setCvCameraViewListener(this);
 		mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
 
-		visionProcessor = new ProcessorSelector(mHeight, mWidth, intrinsicMatrix, distCoeffs, SettingsActivity.trackingLeftTarget());
+		visionProcessor = new ProcessorSelector();
 		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
 
 		WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
@@ -164,6 +181,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	public void onCameraViewStarted(int width, int height) {
 		mWidth = width;
 		mHeight = height;
+
+		CameraInfo.setDims(height, width);
+		CameraInfo.setIsLeftTarget(SettingsActivity.trackingLeftTarget());
 
 		// Reduce exposure and turn on flashlight - to be used with reflective tape
 		mCameraView.setParameters();
@@ -230,18 +250,18 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		}
 
 		VisionData[] out_data = visionProcessor.getProcessor().process(input, mask);
-		if((Integer)out_data[AbstractVisionProcessor.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
-			== AbstractVisionProcessor.EXCECUTION_CODE_OKAY){
+		if((Integer)out_data[VisionProcessorBase.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
+			== VisionProcessorBase.EXCECUTION_CODE_OKAY){
 			Log.e(TAG, "track Error:\n\t" +
-					(String)out_data[AbstractVisionProcessor.IDX_OUT_EXECUTION_MESSAGE].get());
+					(String)out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
 		}
 
-		xDist = out_data[AbstractVisionProcessor.IDX_OUT_XDIST];
-		zDist = out_data[AbstractVisionProcessor.IDX_OUT_ZDIST];
+		xDist.set(out_data[VisionProcessorBase.IDX_OUT_XDIST]);
+		zDist.set(out_data[VisionProcessorBase.IDX_OUT_ZDIST]);
 
 		String printval = "<" +
-				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist) : "NaN") + ", " +
-				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist) : "NaN") + ">";
+				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist.get()) : "NaN") + ", " +
+				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist.get()) : "NaN") + ">";
 		Imgproc.putText(input, printval, new Point(0, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
 		Imgproc.putText(input, Double.toString(cycleTime),

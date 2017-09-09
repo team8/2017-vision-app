@@ -2,8 +2,8 @@ package com.frc8.team8vision.vision.processors;
 
 import com.frc8.team8vision.Constants;
 import com.frc8.team8vision.SettingsActivity;
-import com.frc8.team8vision.vision.AbstractVisionProcessor;
-import com.frc8.team8vision.vision.DataExistsCallback;
+import com.frc8.team8vision.vision.CameraInfo;
+import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionData;
 
 import org.opencv.core.Mat;
@@ -21,11 +21,7 @@ import static com.frc8.team8vision.vision.VisionUtil.*;
  * Created by Alvin on 9/8/2017.
  */
 
-public class CentroidProcessor extends AbstractVisionProcessor {
-
-	public CentroidProcessor(int height, int width, Mat intrinsics, MatOfDouble distortion, boolean isTrackingLeft){
-		super(height, width, intrinsics, distortion, isTrackingLeft);
-	}
+public class CentroidProcessor extends VisionProcessorBase {
 
 	@Override
 	public VisionData[] process(Mat input, Mat mask) {
@@ -39,11 +35,11 @@ public class CentroidProcessor extends AbstractVisionProcessor {
 			output_data[IDX_OUT_EXECUTION_MESSAGE].set("Empty set of contours");
 			return output_data;
 		}
-		MatOfPoint contour = bestContour(contours, input, trackingLeft);
+		MatOfPoint contour = bestContour(contours, input);
 
 		if (contour != null) {
 			Point[] corners = getCorners(contour);
-			output_data[IDX_OUT_ZDIST].set(getPosePnP(corners, input, intrinsicMatrix, distCoeffs, trackingLeft)[2]);
+			output_data[IDX_OUT_ZDIST].set(getPosePnP(corners, input)[2]);
 
 			// Draw corners on image
 			for (int i = 0; i < corners.length; i++) {
@@ -51,11 +47,11 @@ public class CentroidProcessor extends AbstractVisionProcessor {
 			}
 
 			double ratio = Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x)/2;
-			double target = (trackingLeft) ? corners[0].x + (Constants.kVisionTargetWidth/2) * ratio
+			double target = (CameraInfo.isTrackingLeft()) ? corners[0].x + (Constants.kVisionTargetWidth/2) * ratio
 					: corners[1].x - (Constants.kVisionTargetWidth/2) * ratio;
 
-			Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
-			output_data[IDX_OUT_XDIST].set((target - mWidth/2) / ratio + SettingsActivity.getNexusShift());
+			Imgproc.circle(input, new Point(target, CameraInfo.Height()/2), 5, new Scalar(0, 0, 255), -1);
+			output_data[IDX_OUT_XDIST].set((target - CameraInfo.Width()/2) / ratio + SettingsActivity.getNexusShift());
 
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();

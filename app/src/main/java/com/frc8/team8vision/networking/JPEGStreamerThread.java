@@ -289,12 +289,12 @@ public class JPEGStreamerThread implements Runnable {
 				break;
 			case CLOSED:
 				try {
-					Log.i(TAG, "JSONStreamer Socket:\n\tTrying to connect to server");
+//					Log.i(TAG, "JSONStreamer Socket:\n\tTrying to connect to server");
 					m_socket = new Socket(Constants.kRIOHostName, Constants.kVisionPortNumber);
-					Log.i(TAG, "JSONStreamer Socket:\n\tConnected to socket on port "+m_socket.getPort());
+//					Log.i(TAG, "JSONStreamer Socket:\n\tConnected to socket on port "+m_socket.getPort());
 					this.SetConnectionState(SocketConnectionState.ALIVE);
 				} catch (IOException e) {
-					Log.e(TAG, "JSONStreamer Error:\n\tSocket could not connect, retrying: "+e.getStackTrace().toString());
+//					Log.e(TAG, "JSONStreamer Error:\n\tSocket could not connect, retrying: "+e.getStackTrace().toString());
 					return StreamerThreadState.INITIALIZE_WRITER;
 				}
 				break;

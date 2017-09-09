@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.frc8.team8vision.networking.WriteDataThread;
+import com.frc8.team8vision.networking.JSONVisionDataThread;
 
 import org.opencv.core.Mat;
 
@@ -28,7 +28,7 @@ public class RequestReceiver extends BroadcastReceiver {
                 MainActivity.toggleFlash(isFlash);
             }
 //            Log.i("RequestReceiver", "Received request to send data");
-            WriteDataThread.getInstance().SendBroadcast();
+            JSONVisionDataThread.getInstance().sendBroadcast();
         } catch (Exception e) {
             e.printStackTrace();
         }

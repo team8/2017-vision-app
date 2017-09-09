@@ -12,11 +12,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.frc8.team8vision.networking.JPEGStreamerThread;
-import com.frc8.team8vision.networking.WriteDataThread;
+import com.frc8.team8vision.networking.JSONVisionDataThread;
 import com.frc8.team8vision.vision.AbstractVisionProcessor;
 import com.frc8.team8vision.vision.ProcessorSelector;
 import com.frc8.team8vision.vision.VisionData;
-import com.frc8.team8vision.vision.processors.CentroidProcessor;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -123,14 +122,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		visionProcessor = new ProcessorSelector(mHeight, mWidth, intrinsicMatrix, distCoeffs, SettingsActivity.trackingLeftTarget());
 		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
 
-		WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
+		JSONVisionDataThread.getInstance().start(this, JSONVisionDataThread.WriteState.JSON);
 		JPEGStreamerThread.getInstance().start(this);
 	}
 
 	@Override
 	public void onPause() {
 		JPEGStreamerThread.getInstance().pause();
-		WriteDataThread.getInstance().pause();
+		JSONVisionDataThread.getInstance().pause();
 		super.onPause();
 
 		if (mCameraView != null) {
@@ -144,12 +143,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
 		setSliderValues();
-		WriteDataThread.getInstance().resume();
+		JSONVisionDataThread.getInstance().resume();
 		JPEGStreamerThread.getInstance().resume();
 	}
 
 	public void onDestroy() {
-		WriteDataThread.getInstance().destroy();
+		JSONVisionDataThread.getInstance().destroy();
 		JPEGStreamerThread.getInstance().destroy();
 
 		super.onDestroy();
@@ -170,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.toggleFlashLight(SettingsActivity.flashlightOn());
 
 		if (!this.isFocusLocked() || !isSettingsPaused) {
-			WriteDataThread.getInstance().resume();
+			JSONVisionDataThread.getInstance().resume();
 			JPEGStreamerThread.getInstance().resume();
 		}
 	}

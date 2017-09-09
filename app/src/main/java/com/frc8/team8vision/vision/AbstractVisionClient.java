@@ -1,15 +1,17 @@
 package com.frc8.team8vision.vision;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Base class for vision servers
+ * Base class for vision servers. Implements {@link AbstractVisionThread}.
  *
  * @author Quintin Dwight
  */
-public abstract class AbstractVisionServer extends AbstractVisionThread {
+public abstract class AbstractVisionClient extends AbstractVisionThread {
 
     public enum ServerState {
         PRE_INIT, ATTEMPTING_CONNECTION, OPEN
@@ -21,13 +23,13 @@ public abstract class AbstractVisionServer extends AbstractVisionThread {
     protected Socket m_client;
     protected ServerState m_serverState = ServerState.PRE_INIT;
 
-    protected AbstractVisionServer(final String k_threadName) {
+    protected AbstractVisionClient(final String k_threadName) {
         super(k_threadName);
     }
 
     @Override
     @Deprecated
-    public void start(final int k_updateRate) {
+    public void start(final long k_updateRate) {
         super.start(k_updateRate);
     }
 
@@ -50,7 +52,7 @@ public abstract class AbstractVisionServer extends AbstractVisionThread {
     protected void init() {
 
         if (m_serverState != ServerState.PRE_INIT) {
-            log("Thread has already been initialized. Aborting...");
+            Log.e(k_tag, "Thread has already been initialized. Aborting...");
             return;
         }
 
@@ -83,9 +85,9 @@ public abstract class AbstractVisionServer extends AbstractVisionThread {
 
         try {
             // Pause thread until we accept from the client
-            log("Trying to connect to client...");
+            Log.e(k_tag, "Trying to connect to client...");
             m_client = m_server.accept();
-            log("Connected to client: " + m_client.getPort());
+            Log.e(k_tag, "Connected to client: " + m_client.getPort());
             return ServerState.OPEN;
         } catch (IOException e) {
             e.printStackTrace();
@@ -99,7 +101,7 @@ public abstract class AbstractVisionServer extends AbstractVisionThread {
         switch (m_serverState){
 
             case PRE_INIT:
-                log("Thread is not initialized while in update.");
+                Log.e(k_tag, "Thread is not initialized while in update.");
                 break;
 
             case ATTEMPTING_CONNECTION:

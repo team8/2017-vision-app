@@ -2,7 +2,6 @@ package com.frc8.team8vision;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.media.audiofx.BassBoost;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -11,37 +10,27 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.RadioButton;
-import android.widget.Switch;
+
+import com.frc8.team8vision.networking.JPEGStreamerThread;
+import com.frc8.team8vision.networking.WriteDataThread;
+import com.frc8.team8vision.vision.AbstractVisionProcessor;
+import com.frc8.team8vision.vision.ProcessorSelector;
+import com.frc8.team8vision.vision.VisionData;
+import com.frc8.team8vision.vision.processors.CentroidProcessor;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
-import org.opencv.core.Point3;
-import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.imgproc.Moments;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Locale;
-
-import static org.opencv.imgproc.Imgproc.contourArea;
 
 /**
  * The app's startup activity, as suggested by its name. Handles all
@@ -55,12 +44,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private static Mat imageRGB;
 	private static Mat imageRGB_raw;
 
-	private static double turnAngle = 0;
-	private static Double xDist = null, zDist = null;
+	private static VisionData<Double> xDist = null, zDist = null;
 	private static long cycleTime = 0;
 
-	private MatOfDouble distCoeffs;
+	private ProcessorSelector visionProcessor;
 
+	private MatOfDouble distCoeffs;
 	private Mat intrinsicMatrix, imageHSV;
 
 	private static SketchyCameraView mCameraView;
@@ -68,11 +57,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	private long lastCycleTimestamp = 0;
 
-	private int mWidth = 0, mHeight = 0, mPPI = 0;
+	private int mWidth = 0, mHeight = 0;
 	private int[] sliderValues = new int[6];
 	private int mResolutionFactor = 3;      // Divides screen images by given factor
 
-	private boolean trackingLeft;
 
 	/**
 	 * The delay between starting the app and loading OpenCV libraries means that
@@ -104,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 							}
 						}
 						distCoeffs.fromArray(Constants.kGalaxyDistortionCoefficients);
-						mPPI = Constants.kGalaxyPixelsPerInch;
+//						mPPI = Constants.kGalaxyPixelsPerInch;
 					} else {
 						// Nexus 5x is being used
 						for (int i = 0; i < 3; i++) {
@@ -113,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 							}
 						}
 						distCoeffs.fromArray(Constants.kNexusDistortionCoefficients);
-						mPPI = Constants.kNexusPixelsPerInch;
+//						mPPI = Constants.kNexusPixelsPerInch;
 					}
 				} break;
 				default: {
@@ -131,7 +119,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		setContentView(mCameraView);
 		mCameraView.setCvCameraViewListener(this);
 		mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
-		trackingLeft = SettingsActivity.trackingLeftTarget();
+
+		visionProcessor = new ProcessorSelector(mHeight, mWidth, intrinsicMatrix, distCoeffs, SettingsActivity.trackingLeftTarget());
+		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
 
 		WriteDataThread.getInstance().start(this, WriteDataThread.WriteState.JSON);
 		JPEGStreamerThread.getInstance().start(this);
@@ -239,163 +229,26 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			return mask;
 		}
 
-		// Find the peg target contour
-		ArrayList<MatOfPoint> contours = new ArrayList<>();
-		Imgproc.findContours(mask, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-		if (contours.isEmpty()) return input;
-		MatOfPoint contour = bestContour(contours, input);
-
-		if (contour != null) {
-			Point[] corners = getCorners(contour);
-			getPosePnP(corners, input);
-
-			// Draw corners on image
-			for (int i = 0; i < corners.length; i++) {
-				Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
-			}
-
-			double ratio = Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x)/2;
-			double target = (trackingLeft) ? corners[0].x + (Constants.kVisionTargetWidth/2) * ratio
-																	: corners[1].x - (Constants.kVisionTargetWidth/2) * ratio;
-
-			Imgproc.circle(input, new Point(target, mHeight/2), 5, new Scalar(0, 0, 255), -1);
-			xDist = (target - mWidth/2) / ratio + SettingsActivity.getNexusShift();
-
-		} else {
-			xDist = null;
+		VisionData[] out_data = visionProcessor.getProcessor().process(input, mask);
+		if((Integer)out_data[AbstractVisionProcessor.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
+			== AbstractVisionProcessor.EXCECUTION_CODE_OKAY){
+			Log.e(TAG, "track Error:\n\t" +
+					(String)out_data[AbstractVisionProcessor.IDX_OUT_EXECUTION_MESSAGE].get());
 		}
 
-		String printval = "<"+
-				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist.doubleValue()) : "NaN") + ", " +
-				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist.doubleValue()) : "NaN") + ">";
+		xDist = out_data[AbstractVisionProcessor.IDX_OUT_XDIST];
+		zDist = out_data[AbstractVisionProcessor.IDX_OUT_ZDIST];
+
+		String printval = "<" +
+				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist) : "NaN") + ", " +
+				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist) : "NaN") + ">";
 		Imgproc.putText(input, printval, new Point(0, mHeight - 30),
-				Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
+				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
 		Imgproc.putText(input, Double.toString(cycleTime),
-				new Point(mWidth - 200/mResolutionFactor, mHeight - 30),
-                Core.FONT_HERSHEY_SIMPLEX, 2.5/mResolutionFactor, new Scalar(0, 255, 0), 3);
+				new Point(mWidth - 200 / mResolutionFactor, mHeight - 30),
+				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
     }
-
-    /**
-     * Determines the transformation of a camera relative to the vision target.
-     * The transformation is broken down into rotations and translations along the x, y, and z axes.
-     * Note that the rotation values are accurate while the translations are not - I'm still trying
-     * to figure out how to use the middle of the target as the reference point, instead of the top
-     * left corner.
-     * @param src - corners of the image contained in an array
-     * @param input - the image captured by the camera
-     */
-    public void getPosePnP(Point[] src, Mat input) {
-		double width = Constants.kVisionTargetWidth, height = Constants.kVisionTargetHeight,
-				tapeWidth = Constants.kTapeWidth, depth = Constants.kPegLength, conv = 0.0393701 * 12 / 1.95;
-		double leftX, topY, rightX, bottomY;
-		if(trackingLeft){
-			leftX = -width/2;
-			topY = height/2;
-			rightX = leftX+tapeWidth;
-			bottomY = -height/2;
-		}else{
-			rightX = width/2;
-			topY = height/2;
-			leftX = rightX-tapeWidth;
-			bottomY = -height/2;
-		}
-		MatOfPoint2f dstPoints = new MatOfPoint2f();
-        dstPoints.fromArray(src);
-        // In order to calculate the pose, we create a model of the vision targets using 3D coordinates
-        MatOfPoint3f srcPoints = new MatOfPoint3f(new Point3(leftX, topY, 0),
-                                                new Point3(rightX, topY, 0),
-                                                new Point3(leftX, bottomY, 0),
-                                                new Point3(rightX, bottomY, 0));
-        MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
-        Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
-		zDist = (tvecs.get(2, 0)[0]) * conv;
-
-        MatOfPoint3f newPoints = new MatOfPoint3f(
-        		new Point3(0, 0, zDist),
-				new Point3(0, 0, 0)
-		);
-
-        MatOfPoint2f result = new MatOfPoint2f();
-        Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
-        Point[] arr = result.toArray();
-
-        // Estimates the position of the base and tip of the peg
-        Imgproc.line(input, arr[0], arr[1], new Scalar(255, 255, 255), 5);
-
-		for(Point p: arr){
-			Imgproc.circle(input, p, 7, new Scalar(0,255,0));
-		}
-    }
-
-
-	/**
-	 * Remove all contours that are below a certain area threshold. Used to remove salt noise.
-	 */
-	private MatOfPoint bestContour(ArrayList<MatOfPoint> contours, Mat input) {
-		// Sort contours in decreasing order of area
-		Collections.sort(contours, new Comparator<MatOfPoint>() {
-			public int compare(MatOfPoint one, MatOfPoint two) {
-				return Double.compare(Imgproc.contourArea(two), Imgproc.contourArea(one));
-			}
-		});
-		double threshold = 0.4 * Imgproc.contourArea(contours.get(0));
-
-		List<MatOfPoint> found = new ArrayList<MatOfPoint>();
-		for (MatOfPoint contour: contours) {
-			if (Imgproc.contourArea(contour) < threshold) found.add(contour);
-		}
-		contours.removeAll(found);
-		Imgproc.drawContours(input, found, -1, new Scalar(0, 0, 255));
-
-		// Were both strips of tape detected?
-		if (contours.size() >= 2) {
-			Imgproc.drawContours(input, contours, 0, new Scalar(255, 0, 0));
-			Imgproc.drawContours(input, contours, 1, new Scalar(0, 255, 0));
-			// Calculate bounding rectangles of contours to compare x position
-			Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
-			double oneArea = oneRect.area(), twoArea = twoRect.area();
-
-			if (oneArea<=twoArea){
-				trackingLeft = oneRect.x >= twoRect.x;
-				contours.remove(0);
-			} else {
-				trackingLeft = oneRect.x < twoRect.x;
-			}
-		}
-
-		SettingsActivity.setTrackingLeft(trackingLeft);
-
-		// If no target found
-		if (contours.size() == 0){
-			return null;
-		}
-
-		// The first contour should be the optimal one
-		return contours.get(0);
-	}
-
-	/**
-	 * Identify four corners of the contour. Sketchy implementation but it works.
-	 */
-	private Point[] getCorners(MatOfPoint contour) {
-		Point[] arr = contour.toArray(), retval = new Point[4];
-		Arrays.sort(arr, new Comparator<Point>() {
-			public int compare(Point p1, Point p2) {
-				return (int)(p1.x + p1.y - (p2.x + p2.y));
-			}
-		});
-		retval[0] = arr[0];
-		retval[3] = arr[arr.length-1];
-		Arrays.sort(arr, new Comparator<Point>() {
-			public int compare(Point p1, Point p2) {
-				return (int)(p1.x - p1.y - (p2.x - p2.y));
-			}
-		});
-		retval[2] = arr[0];
-		retval[1] = arr[arr.length-1];
-		return retval;
-	}
 
 	private void setSliderValues(){
 		// Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
@@ -433,22 +286,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		}
 		return imageRGB_raw;
 	}
-	public static double getTurnAngle() { return turnAngle; }
 	public static Double getXDisplacement() {
-		if(xDist == null || xDist.isNaN() || xDist.isInfinite()) {
-			return null;
-		}else{
-			return xDist;
-		}
+		return (Double) xDist.get();
 	}
 	public static Double getZDisplacement() {
-		if(zDist == null || zDist.isNaN() || zDist.isInfinite()) {
-			return null;
-		}else{
-			return zDist;
-		}
+		return (Double) zDist.get();
 	}
-	public static long getCycleTime() { return cycleTime; }
 	public boolean isFocusLocked(){
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		int lockValue = preferences.getInt("Focus Lock Value", 0);

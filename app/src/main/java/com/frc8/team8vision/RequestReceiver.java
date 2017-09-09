@@ -3,12 +3,11 @@ package com.frc8.team8vision;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
+
+import com.frc8.team8vision.networking.WriteDataThread;
 
 import org.opencv.core.Mat;
 
-import java.io.OutputStream;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 
 /**

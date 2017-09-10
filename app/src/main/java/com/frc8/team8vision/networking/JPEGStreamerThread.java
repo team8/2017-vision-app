@@ -3,8 +3,8 @@ package com.frc8.team8vision.networking;
 import android.app.Activity;
 import android.util.Log;
 
-import com.frc8.team8vision.Constants;
-import com.frc8.team8vision.MainActivity;
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.android.MainActivity;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;

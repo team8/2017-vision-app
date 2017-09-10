@@ -1,16 +1,16 @@
 package com.frc8.team8vision.vision.processors;
 
-import com.frc8.team8vision.SettingsActivity;
+import com.frc8.team8vision.android.SettingsActivity;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionData;
 
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 import static com.frc8.team8vision.vision.VisionUtil.*;
 
@@ -35,8 +35,8 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 		if (contour != null) {
 			Point[] corners = getCorners(contour);
 			double[] tvecs = getPosePnP(corners, input);
-			output_data[IDX_OUT_ZDIST].set(tvecs[2]);
-			output_data[IDX_OUT_XDIST].set(tvecs[0] + SettingsActivity.getNexusShift());
+			output_data[IDX_OUT_ZDIST].set(tvecs[2] + SettingsActivity.getNexusZShift());
+			output_data[IDX_OUT_XDIST].set(tvecs[0] + SettingsActivity.getNexusXShift());
 
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();

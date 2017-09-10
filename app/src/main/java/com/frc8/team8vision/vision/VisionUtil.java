@@ -1,7 +1,7 @@
 package com.frc8.team8vision.vision;
 
-import com.frc8.team8vision.Constants;
-import com.frc8.team8vision.SettingsActivity;
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.android.SettingsActivity;
 
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Mat;

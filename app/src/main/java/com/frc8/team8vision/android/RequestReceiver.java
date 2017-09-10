@@ -1,9 +1,10 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.android;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import com.frc8.team8vision.android.MainActivity;
 import com.frc8.team8vision.networking.WriteDataThread;
 
 import org.opencv.core.Mat;

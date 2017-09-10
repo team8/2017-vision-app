@@ -1,15 +1,23 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.android;
 
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.Switch;
+
+import com.frc8.team8vision.menu.StoredDoubleEntry;
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.menu.HSVSeekBar;
+import com.frc8.team8vision.R;
 
 /**
  * This activity represents a setting screen that can be accessed to adjust
@@ -21,10 +29,9 @@ import android.widget.Switch;
 public class SettingsActivity extends AppCompatActivity {
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
-	private HSVSeekBar focusLock = null;
+	private static StoredDoubleEntry xShiftEntry = null, zShiftEntry = null;
 
     private static boolean trackingLeft, tuningMode, flashlightOn = false;
-	private static double nexusShift = 0;
 
     private SharedPreferences preferences;
 
@@ -36,31 +43,20 @@ public class SettingsActivity extends AppCompatActivity {
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         trackingLeft = preferences.getBoolean("Tracking Left", true);
-		nexusShift = preferences.getFloat("Nexus Shift", 0.0f);
+
         RadioButton toCheck = (RadioButton)findViewById(((trackingLeft) ? R.id.target_left : R.id.target_right));
         if (tuningMode) toCheck = (RadioButton)findViewById(R.id.tuning_mode);
         toCheck.setChecked(true);
 
         ((Switch)findViewById(R.id.flashlight)).setChecked(flashlightOn);
 
-		final EditText shiftEntry = (EditText) findViewById(R.id.nexusShift);
-		shiftEntry.setText(""+nexusShift);
-		Button applyShift = (Button) findViewById(R.id.applyShift);
-		applyShift.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				SharedPreferences.Editor editor = preferences.edit();
-				nexusShift = (new Double(shiftEntry.getText().toString())).doubleValue();
-				editor.putFloat("Nexus Shift", (float)nexusShift);
-				editor.apply();
-			}
-		});
+        xShiftEntry = new StoredDoubleEntry(R.id.nexusXShift, "X_Shift", 0.0f, this);
+        zShiftEntry = new StoredDoubleEntry(R.id.nexusZShift, "Z_Shift", 0.0f, this);
 
         for (int i = 0; i < 6; i++) {
             seekBars[i] = new HSVSeekBar(Constants.kSliderIds[i], Constants.kSliderReadoutIds[i],
                                          Constants.kSliderDefaultValues[i], Constants.kSliderNames[i], this);
         }
-        focusLock = new HSVSeekBar(R.id.focus_lock, R.id.focus_lock_info, 0, "Focus Lock Value", this);
     }
 
     public void onRadioButtonClicked(View view) {
@@ -89,6 +85,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static void setFlashlightOn(boolean value) { flashlightOn = value; }
 
-	public static double getNexusShift() {return nexusShift;}
+	public static double getNexusXShift() {return xShiftEntry.getValue();}
+	public static double getNexusZShift() {return zShiftEntry.getValue();}
 
 }

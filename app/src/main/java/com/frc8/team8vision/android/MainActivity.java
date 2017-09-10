@@ -1,4 +1,4 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.android;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,6 +11,8 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.R;
 import com.frc8.team8vision.networking.JPEGStreamerThread;
 import com.frc8.team8vision.networking.WriteDataThread;
 import com.frc8.team8vision.vision.CameraInfo;
@@ -57,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			return !(data == null || data.isNaN() || data.isInfinite());
 		}
 	});
-	private static long cycleTime = 0;
+	private static long cycleTime = 1000;
 
 	private ProcessorSelector visionProcessor;
 
@@ -264,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist.get()) : "NaN") + ">";
 		Imgproc.putText(input, printval, new Point(0, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
-		Imgproc.putText(input, Double.toString(cycleTime),
+		Imgproc.putText(input, Double.toString(1000/cycleTime),
 				new Point(mWidth - 200 / mResolutionFactor, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;

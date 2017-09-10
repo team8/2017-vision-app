@@ -4,8 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
-import com.frc8.team8vision.Constants;
-import com.frc8.team8vision.MainActivity;
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.android.MainActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;

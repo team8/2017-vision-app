@@ -1,4 +1,4 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.menu;
 
 import android.app.Activity;
 import android.content.SharedPreferences;

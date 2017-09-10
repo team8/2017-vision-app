@@ -14,7 +14,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity" android:screenOrientation="portrait">
+        <activity android:name=".android.MainActivity" android:screenOrientation="portrait">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,9 +22,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SettingsActivity" android:screenOrientation="landscape"></activity>
+        <activity android:name=".android.SettingsActivity" android:screenOrientation="landscape"></activity>
         <receiver
-            android:name=".RequestReceiver"
+            android:name=".android.RequestReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.frc8.team8vision.GET_DATA"/>

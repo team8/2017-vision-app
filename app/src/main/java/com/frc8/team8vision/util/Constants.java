@@ -1,4 +1,6 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.util;
+
+import com.frc8.team8vision.R;
 
 /**
  * Stores various constants to be used by the rest of the app.

@@ -1,4 +1,4 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.android;
 
 import android.app.ActionBar;
 import android.content.Context;
@@ -9,8 +9,9 @@ import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 
+import com.frc8.team8vision.util.Constants;
+
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;

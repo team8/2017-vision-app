@@ -2,7 +2,8 @@ package com.frc8.team8vision.vision.processors;
 
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.android.SettingsActivity;
-import com.frc8.team8vision.vision.CameraInfo;
+import com.frc8.team8vision.android.CameraInfo;
+import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionData;
 
@@ -13,9 +14,8 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
-import java.util.Set;
 
-import static com.frc8.team8vision.vision.VisionUtil.*;
+import static com.frc8.team8vision.util.VisionUtil.*;
 
 /**
  * Created by Alvin on 9/8/2017.
@@ -47,7 +47,7 @@ public class CentroidProcessor extends VisionProcessorBase {
 			}
 
 			double ratio = Math.max(corners[1].x - corners[0].x, corners[3].x - corners[2].x)/2;
-			double target = (CameraInfo.isTrackingLeft()) ? corners[0].x + (Constants.kVisionTargetWidth/2) * ratio
+			double target = (VisionInfoData.isTrackingLeft()) ? corners[0].x + (Constants.kVisionTargetWidth/2) * ratio
 					: corners[1].x - (Constants.kVisionTargetWidth/2) * ratio;
 
 			Imgproc.circle(input, new Point(target, CameraInfo.Height()/2), 5, new Scalar(0, 0, 255), -1);

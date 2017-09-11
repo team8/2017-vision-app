@@ -15,8 +15,8 @@ import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.networking.JPEGStreamerThread;
 import com.frc8.team8vision.networking.WriteDataThread;
-import com.frc8.team8vision.vision.CameraInfo;
 import com.frc8.team8vision.vision.DataExistsCallback;
+import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
 import com.frc8.team8vision.vision.VisionData;
@@ -44,21 +44,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	private static final String TAG = Constants.kTAG+"MainActivity";
 
-	private static Mat imageRGB;
-	private static Mat imageRGB_raw;
-
-	private static VisionData<Double> xDist = new VisionData<>(Double.NaN, Double.NaN, new DataExistsCallback<Double>() {
-		@Override
-		public boolean doesExist(Double data) {
-			return !(data == null || data.isNaN() || data.isInfinite());
-		}
-	});
-	private static VisionData<Double> zDist = new VisionData<>(Double.NaN, Double.NaN, new DataExistsCallback<Double>() {
-		@Override
-		public boolean doesExist(Double data) {
-			return !(data == null || data.isNaN() || data.isInfinite());
-		}
-	});
 	private static long cycleTime = 1000;
 
 	private ProcessorSelector visionProcessor;
@@ -185,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mHeight = height;
 
 		CameraInfo.setDims(height, width);
-		CameraInfo.setIsLeftTarget(SettingsActivity.trackingLeftTarget());
+		VisionInfoData.setIsTrackingLeft(SettingsActivity.trackingLeftTarget());
 
 		// Reduce exposure and turn on flashlight - to be used with reflective tape
 		mCameraView.setParameters();
@@ -206,12 +191,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	 */
 	@Override
 	public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-		synchronized (this) {
-			imageRGB = inputFrame.rgba();
-			if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
-			imageRGB = track(imageRGB);
-			imageRGB_raw = imageRGB.clone();
-		}
+		Mat imageRGB = inputFrame.rgba();
+		if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
+		imageRGB = track(imageRGB);
+		VisionInfoData.setFrame(imageRGB.clone());
 
 		imageHSV.release();
 		// The returned image will be displayed on screen
@@ -255,11 +238,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		if((Integer)out_data[VisionProcessorBase.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
 			== VisionProcessorBase.EXCECUTION_CODE_OKAY){
 			Log.e(TAG, "track Error:\n\t" +
-					(String)out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
+					out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
 		}
 
-		xDist.set(out_data[VisionProcessorBase.IDX_OUT_XDIST]);
-		zDist.set(out_data[VisionProcessorBase.IDX_OUT_ZDIST]);
+		VisionData<Double> xDist = (out_data[VisionProcessorBase.IDX_OUT_XDIST]);
+		VisionData<Double> zDist = (out_data[VisionProcessorBase.IDX_OUT_ZDIST]);
+
+		VisionInfoData.setXDist(xDist);
+		VisionInfoData.setZDist(zDist);
 
 		String printval = "<" +
 				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist.get()) : "NaN") + ", " +
@@ -299,21 +285,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	 * which phone is running it.
 	 */
 	private boolean isGalaxy() { return Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP; }
-
-	// Getter methods allowing the networking utility classes to retrieve data
-
-	public static Mat getImage() {
-		if (imageRGB_raw != null && imageRGB_raw.channels()<=4){
-			Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_BGRA2RGBA);
-		}
-		return imageRGB_raw;
-	}
-	public static Double getXDisplacement() {
-		return (Double) xDist.get();
-	}
-	public static Double getZDisplacement() {
-		return (Double) zDist.get();
-	}
 	public boolean isFocusLocked(){
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		int lockValue = preferences.getInt("Focus Lock Value", 0);

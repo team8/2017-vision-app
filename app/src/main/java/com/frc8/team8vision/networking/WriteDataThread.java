@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.android.MainActivity;
+import com.frc8.team8vision.vision.VisionInfoData;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -115,7 +116,7 @@ public class WriteDataThread implements Runnable {
     private static final String TAG = Constants.kTAG+"WriteDataThread";
 
     // Instance and state variables
-    public static WriteDataThread s_instance;
+    private static WriteDataThread s_instance;
     private DataThreadState m_dataThreadState = DataThreadState.PREINIT;
     private DataThreadState m_lastThreadState;
     private WriteState m_writeState = WriteState.IDLE;
@@ -320,8 +321,8 @@ public class WriteDataThread implements Runnable {
     private DataThreadState WriteVisionData(){
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("state", "STREAMING");
-        data.put("x_displacement", MainActivity.getXDisplacement());
-        data.put("z_displacement", MainActivity.getZDisplacement());
+        data.put("x_displacement", VisionInfoData.getXDist());
+        data.put("z_displacement", VisionInfoData.getZDist());
         writeData(data);
 
         return m_dataThreadState;

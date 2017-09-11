@@ -1,4 +1,4 @@
-package com.frc8.team8vision.vision;
+package com.frc8.team8vision.android;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
@@ -9,15 +9,13 @@ import org.opencv.core.MatOfDouble;
 
 public class CameraInfo {
 	private static int mHeight, mWidth;
-	private static Boolean trackingLeft;
 
 	private static Mat intrinsicMatrix;
 	private static MatOfDouble distCoeffs;
 
-	public static void setInfo(int height, int width, boolean isTrackingLeft, Mat intrinsics, MatOfDouble distortion){
+	public static void setInfo(int height, int width, Mat intrinsics, MatOfDouble distortion){
 		mHeight = height;
 		mWidth = width;
-		trackingLeft = isTrackingLeft;
 		intrinsicMatrix = intrinsics;
 		distCoeffs = distortion;
 	}
@@ -25,9 +23,6 @@ public class CameraInfo {
 	public static void setDims(int height, int width){
 		mHeight = height;
 		mWidth = width;
-	}
-	public static void setIsLeftTarget(boolean isTrackingLeft){
-		trackingLeft = isTrackingLeft;
 	}
 	public static void setIntrinsics(Mat intrinsics){
 		intrinsicMatrix = intrinsics;
@@ -41,9 +36,6 @@ public class CameraInfo {
 	}
 	public static int Width(){
 		return mWidth;
-	}
-	public static boolean isTrackingLeft(){
-		return trackingLeft;
 	}
 	public static Mat IntrinsicMatrix(){
 		return intrinsicMatrix;

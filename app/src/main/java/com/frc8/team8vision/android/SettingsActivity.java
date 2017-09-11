@@ -85,7 +85,19 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static void setFlashlightOn(boolean value) { flashlightOn = value; }
 
-	public static double getNexusXShift() {return xShiftEntry.getValue();}
-	public static double getNexusZShift() {return zShiftEntry.getValue();}
+	public static double getNexusXShift() {
+		if(xShiftEntry != null){
+            return xShiftEntry.getValue();
+        } else {
+            return 0;
+        }
+	}
+	public static double getNexusZShift() {
+		if(zShiftEntry != null){
+            return zShiftEntry.getValue();
+        } else {
+            return 0;
+        }
+	}
 
 }

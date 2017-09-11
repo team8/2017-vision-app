@@ -10,9 +10,8 @@ import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
-import java.util.Set;
 
-import static com.frc8.team8vision.vision.VisionUtil.*;
+import static com.frc8.team8vision.util.VisionUtil.*;
 
 /**
  * Created by Alvin on 9/8/2017.

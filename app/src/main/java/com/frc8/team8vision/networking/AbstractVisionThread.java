@@ -1,4 +1,4 @@
-package com.frc8.team8vision.vision;
+package com.frc8.team8vision.networking;
 
 /**
  * Base class for vision threads

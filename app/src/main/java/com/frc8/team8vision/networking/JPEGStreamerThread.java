@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.util.Log;
 
 import com.frc8.team8vision.util.Constants;
-import com.frc8.team8vision.android.MainActivity;
+import com.frc8.team8vision.vision.VisionInfoData;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -109,7 +109,7 @@ public class JPEGStreamerThread implements Runnable {
 	private static final String TAG = Constants.kTAG+"JPEGStreamerThread";
 
 	// Instance and state variables
-	public static JPEGStreamerThread s_instance;
+	private static JPEGStreamerThread s_instance;
 	private StreamerThreadState m_streamerThreadState = StreamerThreadState.PREINIT;
 	private StreamerThreadState m_lastThreadState;
 	private SocketConnectionState m_socketConnectionState = SocketConnectionState.CLOSED;
@@ -343,7 +343,7 @@ public class JPEGStreamerThread implements Runnable {
 
 	private byte[] getImageJPEGBytes(){
 		// Initialize images
-		Mat imageRGB = MainActivity.getImage();
+		Mat imageRGB = VisionInfoData.getFrame();
 		if (imageRGB == null || imageRGB.empty()) {
 			return null;
 		}

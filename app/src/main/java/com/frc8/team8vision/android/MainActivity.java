@@ -47,8 +47,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	private ProcessorSelector visionProcessor;
 
-	private Mat imageHSV;
-
 	private static SketchyCameraView mCameraView;
 	private static boolean isSettingsPaused = false;
 
@@ -72,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			switch (status) {
 				case LoaderCallbackInterface.SUCCESS: {
 					Log.i(TAG, "OpenCV load success");
-					imageHSV = new Mat();
 					// Start camera feed
 					mCameraView.enableView();
 
@@ -92,7 +89,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 							}
 						}
 						distCoeffs.fromArray(Constants.kGalaxyDistortionCoefficients);
-//						mPPI = Constants.kGalaxyPixelsPerInch;
 					} else {
 						// Nexus 5x is being used
 						for (int i = 0; i < 3; i++) {
@@ -101,7 +97,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 							}
 						}
 						distCoeffs.fromArray(Constants.kNexusDistortionCoefficients);
-//						mPPI = Constants.kNexusPixelsPerInch;
 					}
 				} break;
 				default: {
@@ -159,7 +154,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		if (mCameraView != null) {
 			mCameraView.disableView();
-			if (imageHSV != null) imageHSV.release();
 		}
 	}
 
@@ -195,7 +189,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		imageRGB = track(imageRGB);
 		VisionInfoData.setFrame(imageRGB.clone());
 
-		imageHSV.release();
 		// The returned image will be displayed on screen
 		return imageRGB;
 	}
@@ -219,6 +212,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		lastCycleTimestamp = System.currentTimeMillis();
 
 		Mat mask = new Mat();
+		Mat imageHSV = new Mat();
 
 		// Create mask from hsv threshold
 		Scalar lower_bound = new Scalar(sliderValues[0], sliderValues[1], sliderValues[2]),

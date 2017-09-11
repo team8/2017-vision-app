@@ -33,12 +33,10 @@ public class ReadWriteLock {
 
 	public synchronized void lockRead() throws InterruptedException{
 		Thread callingThread = Thread.currentThread();
-		while(! canGrantReadAccess(callingThread)){
+		while(!canGrantReadAccess(callingThread)){
 			wait();
 		}
-
-		threadReadCount.put(callingThread,
-				(getReadAccessCount(callingThread) + 1));
+		threadReadCount.put(callingThread, (getReadAccessCount(callingThread) + 1));
 	}
 	public synchronized void unlockRead(){
 		Thread callingThread = Thread.currentThread();
@@ -52,10 +50,10 @@ public class ReadWriteLock {
 		notifyAll();
 	}
 	private boolean canGrantReadAccess(Thread callingThread){
-		if( isWriter(callingThread) ) return true;
-		if( hasWriter()             ) return false;
-		if( isReader(callingThread) ) return true;
-		if( hasWriteRequests()      ) return false;
+		if(isWriter(callingThread)) return true;
+		if(hasWriter()) 			return false;
+		if(isReader(callingThread)) return true;
+		if(hasWriteRequests()) 		return false;
 		return true;
 	}
 	private boolean isReader(Thread callingThread){
@@ -77,7 +75,7 @@ public class ReadWriteLock {
 	public synchronized void lockWrite() throws InterruptedException{
 		writeRequests++;
 		Thread callingThread = Thread.currentThread();
-		while(! canGrantWriteAccess(callingThread)){
+		while(!canGrantWriteAccess(callingThread)){
 			wait();
 		}
 		writeRequests--;

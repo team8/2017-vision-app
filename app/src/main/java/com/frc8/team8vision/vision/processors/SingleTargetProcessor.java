@@ -1,30 +1,23 @@
 package com.frc8.team8vision.vision.processors;
 
-import com.frc8.team8vision.Constants;
-import com.frc8.team8vision.SettingsActivity;
-import com.frc8.team8vision.vision.AbstractVisionProcessor;
+import com.frc8.team8vision.android.SettingsActivity;
+import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionData;
 
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
-import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 
-import static com.frc8.team8vision.vision.VisionUtil.*;
+import static com.frc8.team8vision.util.VisionUtil.*;
 
 /**
  * Created by Alvin on 9/8/2017.
  */
 
-public class SingleTargetProcessor extends AbstractVisionProcessor{
-
-	public SingleTargetProcessor(int height, int width, Mat intrinsics, MatOfDouble distortion, boolean isTrackingLeft) {
-		super(height, width, intrinsics, distortion, isTrackingLeft);
-	}
+public class SingleTargetProcessor extends VisionProcessorBase {
 
 	@Override
 	public VisionData[] process(Mat input, Mat mask) {
@@ -36,13 +29,13 @@ public class SingleTargetProcessor extends AbstractVisionProcessor{
 			output_data[IDX_OUT_EXECUTION_MESSAGE].set("Empty set of contours");
 			return output_data;
 		}
-		MatOfPoint contour = bestContour(contours, input, trackingLeft);
+		MatOfPoint contour = bestContour(contours, input);
 
 		if (contour != null) {
 			Point[] corners = getCorners(contour);
-			double[] tvecs = getPosePnP(corners, input, intrinsicMatrix, distCoeffs, trackingLeft);
-			output_data[IDX_OUT_ZDIST].set(tvecs[2]);
-			output_data[IDX_OUT_XDIST].set(tvecs[0] + SettingsActivity.getNexusShift());
+			double[] tvecs = getPosePnP(corners, input);
+			output_data[IDX_OUT_ZDIST].set(tvecs[2] + SettingsActivity.getNexusZShift());
+			output_data[IDX_OUT_XDIST].set(tvecs[0] + SettingsActivity.getNexusXShift());
 
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();

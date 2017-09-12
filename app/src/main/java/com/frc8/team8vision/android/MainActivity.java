@@ -1,4 +1,4 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.android;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,9 +11,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.R;
 import com.frc8.team8vision.networking.JPEGStreamerThread;
 import com.frc8.team8vision.networking.JSONVisionDataThread;
-import com.frc8.team8vision.vision.AbstractVisionProcessor;
+import com.frc8.team8vision.vision.VisionInfoData;
+import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
 import com.frc8.team8vision.vision.VisionData;
 
@@ -40,16 +43,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	private static final String TAG = Constants.kTAG+"MainActivity";
 
-	private static Mat imageRGB;
-	private static Mat imageRGB_raw;
-
-	private static VisionData<Double> xDist = null, zDist = null;
-	private static long cycleTime = 0;
+	private static long cycleTime = 1000;
 
 	private ProcessorSelector visionProcessor;
 
-	private MatOfDouble distCoeffs;
-	private Mat intrinsicMatrix, imageHSV;
+	private Mat imageHSV;
 
 	private static SketchyCameraView mCameraView;
 	private static boolean isSettingsPaused = false;
@@ -68,6 +66,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 		@Override
 		public void onManagerConnected(int status) {
+			Mat intrinsicMatrix = null;
+			MatOfDouble distCoeffs = null;
+
 			switch (status) {
 				case LoaderCallbackInterface.SUCCESS: {
 					Log.i(TAG, "OpenCV load success");
@@ -107,6 +108,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 					super.onManagerConnected(status);
 				} break;
 			}
+
+			CameraInfo.setIntrinsics(intrinsicMatrix);
+			CameraInfo.setDistortion(distCoeffs);
 		}
 	};
 
@@ -119,7 +123,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.setCvCameraViewListener(this);
 		mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
 
-		visionProcessor = new ProcessorSelector(mHeight, mWidth, intrinsicMatrix, distCoeffs, SettingsActivity.trackingLeftTarget());
+		visionProcessor = new ProcessorSelector();
 		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
 
 		JSONVisionDataThread.getInstance().start(this, JSONVisionDataThread.WriteState.JSON);
@@ -164,6 +168,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mWidth = width;
 		mHeight = height;
 
+		CameraInfo.setDims(height, width);
+		VisionInfoData.setIsTrackingLeft(SettingsActivity.trackingLeftTarget());
+
 		// Reduce exposure and turn on flashlight - to be used with reflective tape
 		mCameraView.setParameters();
 		mCameraView.toggleFlashLight(SettingsActivity.flashlightOn());
@@ -183,12 +190,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	 */
 	@Override
 	public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-		synchronized (this) {
-			imageRGB = inputFrame.rgba();
-			if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
-			imageRGB = track(imageRGB);
-			imageRGB_raw = imageRGB.clone();
-		}
+		Mat imageRGB = inputFrame.rgba();
+		if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
+		imageRGB = track(imageRGB);
+		VisionInfoData.setFrame(imageRGB.clone());
 
 		imageHSV.release();
 		// The returned image will be displayed on screen
@@ -229,21 +234,24 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		}
 
 		VisionData[] out_data = visionProcessor.getProcessor().process(input, mask);
-		if((Integer)out_data[AbstractVisionProcessor.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
-			== AbstractVisionProcessor.EXCECUTION_CODE_OKAY){
+		if((Integer)out_data[VisionProcessorBase.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
+			== VisionProcessorBase.EXCECUTION_CODE_OKAY){
 			Log.e(TAG, "track Error:\n\t" +
-					(String)out_data[AbstractVisionProcessor.IDX_OUT_EXECUTION_MESSAGE].get());
+					out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
 		}
 
-		xDist = out_data[AbstractVisionProcessor.IDX_OUT_XDIST];
-		zDist = out_data[AbstractVisionProcessor.IDX_OUT_ZDIST];
+		VisionData<Double> xDist = (out_data[VisionProcessorBase.IDX_OUT_XDIST]);
+		VisionData<Double> zDist = (out_data[VisionProcessorBase.IDX_OUT_ZDIST]);
+
+		VisionInfoData.setXDist(xDist);
+		VisionInfoData.setZDist(zDist);
 
 		String printval = "<" +
-				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist) : "NaN") + ", " +
-				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist) : "NaN") + ">";
+				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist.get()) : "NaN") + ", " +
+				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist.get()) : "NaN") + ">";
 		Imgproc.putText(input, printval, new Point(0, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
-		Imgproc.putText(input, Double.toString(cycleTime),
+		Imgproc.putText(input, Double.toString(1000/cycleTime),
 				new Point(mWidth - 200 / mResolutionFactor, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;
@@ -276,21 +284,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	 * which phone is running it.
 	 */
 	private boolean isGalaxy() { return Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP; }
-
-	// Getter methods allowing the networking utility classes to retrieve data
-
-	public static Mat getImage() {
-		if (imageRGB_raw != null && imageRGB_raw.channels()<=4){
-			Imgproc.cvtColor(imageRGB_raw, imageRGB_raw, Imgproc.COLOR_BGRA2RGBA);
-		}
-		return imageRGB_raw;
-	}
-	public static Double getXDisplacement() {
-		return (Double) xDist.get();
-	}
-	public static Double getZDisplacement() {
-		return (Double) zDist.get();
-	}
 	public boolean isFocusLocked(){
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		int lockValue = preferences.getInt("Focus Lock Value", 0);

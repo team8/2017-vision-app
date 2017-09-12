@@ -7,7 +7,7 @@ import org.opencv.core.MatOfDouble;
  * Created by Alvin on 9/8/2017.
  */
 
-public abstract class AbstractVisionProcessor {
+public abstract class VisionProcessorBase {
 
 	public static final int EXCECUTION_CODE_OKAY = 0;
 	public static final int EXECUTION_CODE_FAIL = 1;
@@ -20,19 +20,7 @@ public abstract class AbstractVisionProcessor {
 
 	protected VisionData[] output_data;
 
-	protected int mHeight, mWidth;
-	protected Boolean trackingLeft;
-
-	protected Mat intrinsicMatrix;
-	protected MatOfDouble distCoeffs;
-
-	public AbstractVisionProcessor(int height, int width, Mat intrinsics, MatOfDouble distortion, boolean isTrackingLeft){
-			mHeight = height;
-			mWidth = width;
-			intrinsicMatrix = intrinsics;
-			distCoeffs = distortion;
-			trackingLeft = isTrackingLeft;
-
+	public VisionProcessorBase(){
 			output_data = new VisionData[OUT_DIM];
 
 			output_data[IDX_OUT_FUNCTION_EXECUTION_CODE] = new VisionData<Integer>(0, null, new DataExistsCallback<Integer>(){});

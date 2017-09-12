@@ -1,7 +1,10 @@
-package com.frc8.team8vision.vision;
+package com.frc8.team8vision.util;
 
-import com.frc8.team8vision.Constants;
-import com.frc8.team8vision.SettingsActivity;
+import com.frc8.team8vision.android.CameraInfo;
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.android.SettingsActivity;
+import com.frc8.team8vision.vision.VisionData;
+import com.frc8.team8vision.vision.VisionInfoData;
 
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Mat;
@@ -30,7 +33,9 @@ public abstract class VisionUtil {
 	/**
 	 * Remove all contours that are below a certain area threshold. Used to remove salt noise.
 	 */
-	public static MatOfPoint bestContour(ArrayList<MatOfPoint> contours, Mat input, Boolean trackingLeft) {
+	public static MatOfPoint bestContour(ArrayList<MatOfPoint> contours, Mat input) {
+		boolean trackingLeft = VisionInfoData.isTrackingLeft();
+
 		// Sort contours in decreasing order of area
 		Collections.sort(contours, new Comparator<MatOfPoint>() {
 			public int compare(MatOfPoint one, MatOfPoint two) {
@@ -63,6 +68,7 @@ public abstract class VisionUtil {
 		}
 
 		SettingsActivity.setTrackingLeft(trackingLeft);
+		VisionInfoData.setIsTrackingLeft(trackingLeft);
 
 		// If no target found
 		if (contours.size() == 0){
@@ -82,11 +88,12 @@ public abstract class VisionUtil {
 	 * @param src - corners of the image contained in an array
 	 * @param input - the image captured by the camera
 	 */
-	public static double[] getPosePnP(Point[] src, Mat input, Mat intrinsicMatrix, MatOfDouble distCoeffs, boolean trackingLeft) {
+	public static double[] getPosePnP(Point[] src, Mat input) {
 		double width = Constants.kVisionTargetWidth, height = Constants.kVisionTargetHeight,
 				tapeWidth = Constants.kTapeWidth, depth = Constants.kPegLength, conv = 0.0393701 * 12 / 1.95;
 		double leftX, topY, rightX, bottomY;
-		if(trackingLeft){
+
+		if(VisionInfoData.isTrackingLeft()){
 			leftX = -width/2;
 			topY = height/2;
 			rightX = leftX+tapeWidth;
@@ -105,7 +112,13 @@ public abstract class VisionUtil {
 				new Point3(leftX, bottomY, 0),
 				new Point3(rightX, bottomY, 0));
 		MatOfDouble rvecs = new MatOfDouble(), tvecs = new MatOfDouble();
-		Calib3d.solvePnP(srcPoints, dstPoints, intrinsicMatrix, distCoeffs, rvecs, tvecs);
+		Calib3d.solvePnP(
+				srcPoints,
+				dstPoints,
+				CameraInfo.IntrinsicMatrix(),
+				CameraInfo.DistortionCoefficients(),
+				rvecs,
+				tvecs);
 		double zDist = ((tvecs.get(2, 0)[0]) * conv);
 
 		MatOfPoint3f newPoints = new MatOfPoint3f(
@@ -114,7 +127,13 @@ public abstract class VisionUtil {
 		);
 
 		MatOfPoint2f result = new MatOfPoint2f();
-		Calib3d.projectPoints(newPoints, rvecs, tvecs, intrinsicMatrix, distCoeffs, result);
+		Calib3d.projectPoints(
+				newPoints,
+				rvecs,
+				tvecs,
+				CameraInfo.IntrinsicMatrix(),
+				CameraInfo.DistortionCoefficients(),
+				result);
 		Point[] arr = result.toArray();
 
 		// Estimates the position of the base and tip of the peg

@@ -4,9 +4,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
-import com.frc8.team8vision.Constants;
-import com.frc8.team8vision.MainActivity;
-import com.frc8.team8vision.vision.AbstractVisionThread;
+import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.vision.VisionInfoData;
+
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -300,8 +300,8 @@ public class JSONVisionDataThread extends AbstractVisionThread {
     private DataThreadState writeVisionData() {
         HashMap<String, Object> data = new HashMap<>();
         data.put("state", "STREAMING");
-        data.put("x_displacement", MainActivity.getXDisplacement());
-        data.put("z_displacement", MainActivity.getZDisplacement());
+        data.put("x_displacement", VisionInfoData.getXDist());
+        data.put("z_displacement", VisionInfoData.getZDist());
         writeData(data);
 
         return m_dataThreadState;

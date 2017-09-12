@@ -1,4 +1,4 @@
-package com.frc8.team8vision;
+package com.frc8.team8vision.android;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

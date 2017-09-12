@@ -1,4 +1,4 @@
-package com.frc8.team8vision.vision;
+package com.frc8.team8vision.networking;
 
 import com.frc8.team8vision.Constants;
 

@@ -18,17 +18,16 @@ public class StoredDoubleEntry implements TextWatcher {
 
 	private EditText textEntry;
 	private int entryID;
+	private String title;
 	private String name;
 	private SharedPreferences preferences;
 
-	public StoredDoubleEntry(int textEntryID, String name, float default_value, Activity activity){
-		this.data_value = default_value;
+	public StoredDoubleEntry(int textEntryID, String name, Activity activity){
 		this.textEntry = (EditText)activity.findViewById(textEntryID);
 		this.entryID = textEntryID;
-		this.name = name;
+		this.title = name;
 
 		preferences = PreferenceManager.getDefaultSharedPreferences(activity);
-		textEntry.setText("" + preferences.getFloat(name, default_value));
 
 		textEntry.addTextChangedListener(this);
 	}
@@ -37,8 +36,10 @@ public class StoredDoubleEntry implements TextWatcher {
 		return data_value;
 	}
 
-	public void reset(){
-		textEntry.removeTextChangedListener(this);
+	public void initProfiles(String profile, float default_value){
+		this.name = this.title + "_" + profile;
+		this.data_value = preferences.getFloat(name, default_value);
+		textEntry.setText("" + this.data_value);
 	}
 
 	@Override

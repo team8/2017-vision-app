@@ -33,6 +33,7 @@ public class SelectionDropdown implements AdapterView.OnItemSelectedListener {
 
 	private Spinner spinner;
 	private int spinnerID;
+	private String title;
 	private String name;
 	private boolean isDynamic;
 	private OnSelectionChangedCallback callback;
@@ -43,7 +44,7 @@ public class SelectionDropdown implements AdapterView.OnItemSelectedListener {
 	public SelectionDropdown(int textEntryID, String name, List<String> elements, Activity activity,
 							 boolean isDynamic, OnSelectionChangedCallback callback){
 		this.spinnerID = textEntryID;
-		this.name = name;
+		this.title = name;
 		this.isDynamic = isDynamic;
 		this.callback = callback;
 		this.activity = activity;
@@ -52,7 +53,7 @@ public class SelectionDropdown implements AdapterView.OnItemSelectedListener {
 		preferences = PreferenceManager.getDefaultSharedPreferences(activity);
 
 		if(isDynamic){
-			Set<String> pref_elems = preferences.getStringSet(this.name+"_set", Collections.EMPTY_SET);
+			Set<String> pref_elems = preferences.getStringSet(this.title+"_set", Collections.EMPTY_SET);
 			if(!(pref_elems == null || pref_elems.isEmpty())){
 				this.elements = new ArrayList<>(pref_elems);
 			} else {
@@ -87,6 +88,11 @@ public class SelectionDropdown implements AdapterView.OnItemSelectedListener {
 							 boolean isDynamic, OnSelectionChangedCallback callback){
 		this(textEntryID, name, new ArrayList<>(Arrays.asList(VisionUtil.enumToString(e))),
 				activity, isDynamic, callback);
+	}
+
+	public void initProfiles(String profile){
+		this.name = this.title + (this.isDynamic ? "" : "_" + profile);
+		spinner.setSelection(preferences.getInt(this.name+"_index", 0));
 	}
 
 	private void addElement(String element){

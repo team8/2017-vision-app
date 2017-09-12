@@ -26,7 +26,7 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
     // The settings contained in the app - similar to a hash table
     private SharedPreferences preferences;
 
-    public HSVSeekBar(int sliderId, int displayId, int def, String title, String profile, Activity activity) {
+    public HSVSeekBar(int sliderId, int displayId, String title, Activity activity) {
         this.sliderId = sliderId;
         this.title = title;
 
@@ -34,7 +34,6 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
         display = (TextView)activity.findViewById(displayId);
 
         preferences = PreferenceManager.getDefaultSharedPreferences(activity);
-		initProfiles(profile, def);
 
         slider.setOnSeekBarChangeListener(this);
     }

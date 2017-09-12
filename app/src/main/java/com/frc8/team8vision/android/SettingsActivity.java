@@ -4,14 +4,9 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.RadioButton;
 import android.widget.Switch;
 
 import com.frc8.team8vision.menu.SelectionDropdown;
@@ -64,6 +59,42 @@ public class SettingsActivity extends AppCompatActivity {
                 initialize(label);
             }
         });
+		profileMode.initProfiles(profile);
+
+		targetMode = new SelectionDropdown(R.id.targetModeSelection, Constants.kTargetMode,
+				TargetMode.class, this, false, new OnSelectionChangedCallback() {
+			@Override
+			public void selectionChanged(String label) {
+				SharedPreferences.Editor editor = preferences.edit();
+				TargetMode mode = TargetMode.valueOf(label.toUpperCase());
+				switch (mode){
+					case LEFT_TARGET:
+						tuningMode = false;
+						trackingLeft = true;
+						break;
+					case RIGHT_TARGET:
+						tuningMode = false;
+						trackingLeft = false;
+						break;
+					case TUNING:
+						tuningMode = true;
+						break;
+				}
+				editor.putBoolean(profile+"_" + Constants.kTrackingLeft, trackingLeft);
+				editor.putBoolean(profile+"_" + Constants.kTuningMode, tuningMode);
+				editor.apply();
+			}
+		});
+
+		processorMode = new SelectionDropdown(R.id.processorSelection, Constants.kProcessorMode,
+				ProcessorSelector.ProcessorType.class, this, false, new OnSelectionChangedCallback() {
+			@Override
+			public void selectionChanged(String label) {
+				SharedPreferences.Editor editor = preferences.edit();
+				editor.putString(profile+"_" + Constants.kProcessorType, label.toUpperCase());
+				editor.apply();
+			}
+		});
 
 		Button deleteProfile = ((Button)findViewById(R.id.deleteProfile));
 		deleteProfile.setOnClickListener(new View.OnClickListener() {
@@ -73,6 +104,14 @@ public class SettingsActivity extends AppCompatActivity {
 				initialize(newProfile);
 			}
 		});
+
+		xShiftEntry = new StoredDoubleEntry(R.id.nexusXShift, Constants.kXShift, this);
+		zShiftEntry = new StoredDoubleEntry(R.id.nexusZShift, Constants.kZShift, this);
+
+		for (int i = 0; i < 6; i++) {
+			seekBars[i] = new HSVSeekBar(Constants.kSliderIds[i], Constants.kSliderReadoutIds[i],
+					 Constants.kSliderNames[i], this);
+		}
 
         initialize(profile);
     }
@@ -85,54 +124,14 @@ public class SettingsActivity extends AppCompatActivity {
 
         ((Switch)findViewById(R.id.flashlight)).setChecked(flashlightOn);
 
-		if(xShiftEntry!=null) xShiftEntry.reset();
-		if(zShiftEntry!=null) zShiftEntry.reset();
+		xShiftEntry.initProfiles(profile, 0.0f);
+		zShiftEntry.initProfiles(profile, 0.0f);
 
-        xShiftEntry = new StoredDoubleEntry(R.id.nexusXShift, profile+"_" + Constants.kXShift, 0.0f, this);
-        zShiftEntry = new StoredDoubleEntry(R.id.nexusZShift, profile+"_" + Constants.kZShift, 0.0f, this);
-
-        targetMode = new SelectionDropdown(R.id.targetModeSelection, profile + "_" + Constants.kTargetMode,
-				TargetMode.class, this, false, new OnSelectionChangedCallback() {
-            @Override
-            public void selectionChanged(String label) {
-                SharedPreferences.Editor editor = preferences.edit();
-                TargetMode mode = TargetMode.valueOf(label.toUpperCase());
-                switch (mode){
-                    case LEFT_TARGET:
-                        tuningMode = false;
-                        trackingLeft = true;
-                        break;
-                    case RIGHT_TARGET:
-                        tuningMode = false;
-                        trackingLeft = false;
-                        break;
-                    case TUNING:
-                        tuningMode = true;
-                        break;
-                }
-                editor.putBoolean(profile+"_" + Constants.kTrackingLeft, trackingLeft);
-				editor.putBoolean(profile+"_" + Constants.kTuningMode, tuningMode);
-				editor.apply();
-            }
-        });
-
-		processorMode = new SelectionDropdown(R.id.processorSelection, profile + "_" + Constants.kProcessorMode,
-				ProcessorSelector.ProcessorType.class, this, false, new OnSelectionChangedCallback() {
-			@Override
-			public void selectionChanged(String label) {
-				SharedPreferences.Editor editor = preferences.edit();
-				editor.putString(profile+"_" + Constants.kProcessorType, label.toUpperCase());
-				editor.apply();
-			}
-		});
+		targetMode.initProfiles(profile);
+		processorMode.initProfiles(profile);
 
         for (int i = 0; i < 6; i++) {
-			if(seekBars[i] == null){
-				seekBars[i] = new HSVSeekBar(Constants.kSliderIds[i], Constants.kSliderReadoutIds[i],
-						Constants.kSliderDefaultValues[i], Constants.kSliderNames[i], profile, this);
-			} else {
-				seekBars[i].initProfiles(profile, Constants.kSliderDefaultValues[i]);
-			}
+			seekBars[i].initProfiles(profile, Constants.kSliderDefaultValues[i]);
         }
     }
 

@@ -21,11 +21,12 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
     private int sliderId;
 
     private String title;
+    private String name;
 
     // The settings contained in the app - similar to a hash table
     private SharedPreferences preferences;
 
-    public HSVSeekBar(int sliderId, int displayId, int def, String title, Activity activity) {
+    public HSVSeekBar(int sliderId, int displayId, int def, String title, String profile, Activity activity) {
         this.sliderId = sliderId;
         this.title = title;
 
@@ -33,15 +34,20 @@ public class HSVSeekBar implements SeekBar.OnSeekBarChangeListener{
         display = (TextView)activity.findViewById(displayId);
 
         preferences = PreferenceManager.getDefaultSharedPreferences(activity);
-        setProgress(preferences.getInt(title, def));
+		initProfiles(profile, def);
 
         slider.setOnSeekBarChangeListener(this);
     }
 
+    public void initProfiles(String profile, int def){
+		this.name = profile + "_" + title;
+		setProgress(preferences.getInt(name, def));
+	}
+
     // Change slider and store its value in preferences
     private void setProgress(int progress) {
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt(title, progress);
+        editor.putInt(name, progress);
         slider.setProgress(progress);
         display.setText(title + ": " + progress);
         editor.apply();

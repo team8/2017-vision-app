@@ -28,6 +28,20 @@ public class Constants {
     public static final String[] kSliderNames = {"Minimum Hue", "Minimum Saturation", "Minimum Value",
                                                  "Maximum Hue", "Maximum Saturation", "Maximum Value"};
 
+    // Setting option names
+    public static final String
+            kProfileSelection = "ProfileSelection",
+            kProfileName = "Profile_Name",
+            kTrackingLeft = "Tracking_Left",
+            kFlashlightOn = "Flashlight_On",
+            kTuningMode = "Tuning_Mode",
+            kXShift = "X_Shift",
+            kZShift = "Z_Shift",
+            kTargetMode = "TargetMode",
+            kProcessorMode = "ProcessorMode",
+            kProcessorType = "ProcessorType"
+    ;
+
     // Physical specs of peg (all measurements are in inches)
     public static final double kVisionTargetWidth = 10.25, kTapeWidth = 2, kVisionTargetHeight = 5.0, kPegLength = 10.5;
 

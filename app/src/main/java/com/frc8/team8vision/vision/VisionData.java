@@ -1,5 +1,7 @@
 package com.frc8.team8vision.vision;
 
+import com.frc8.team8vision.util.DataExistsCallback;
+
 /**
  * Created by Alvin on 9/8/2017.
  */

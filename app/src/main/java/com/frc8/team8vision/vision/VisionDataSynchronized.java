@@ -1,6 +1,7 @@
 package com.frc8.team8vision.vision;
 
 import com.frc8.team8vision.util.AutoCloseableLock;
+import com.frc8.team8vision.util.DataExistsCallback;
 import com.frc8.team8vision.util.ReadWriteLock;
 
 /**

@@ -1,4 +1,4 @@
-package com.frc8.team8vision.vision;
+package com.frc8.team8vision.util;
 
 /**
  * Created by Alvin on 9/8/2017.
@@ -6,6 +6,6 @@ package com.frc8.team8vision.vision;
 
 public abstract class DataExistsCallback<T> {
 	public boolean doesExist(T data){
-		return data == null;
+		return data != null;
 	}
 }

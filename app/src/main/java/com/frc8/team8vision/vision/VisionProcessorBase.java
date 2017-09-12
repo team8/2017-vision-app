@@ -1,7 +1,8 @@
 package com.frc8.team8vision.vision;
 
+import com.frc8.team8vision.util.DataExistsCallback;
+
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfDouble;
 
 /**
  * Created by Alvin on 9/8/2017.
@@ -23,7 +24,7 @@ public abstract class VisionProcessorBase {
 	public VisionProcessorBase(){
 			output_data = new VisionData[OUT_DIM];
 
-			output_data[IDX_OUT_FUNCTION_EXECUTION_CODE] = new VisionData<Integer>(0, null, new DataExistsCallback<Integer>(){});
+			output_data[IDX_OUT_FUNCTION_EXECUTION_CODE] = new VisionData<Integer>(0, 1, new DataExistsCallback<Integer>(){});
 			output_data[IDX_OUT_EXECUTION_MESSAGE] = new VisionData<String>("Safe execution", null, new DataExistsCallback<String>(){});
 			output_data[IDX_OUT_XDIST] = new VisionData<Double>(Double.NaN, Double.NaN, new DataExistsCallback<Double>() {
 				@Override

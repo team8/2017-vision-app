@@ -17,12 +17,14 @@ import org.opencv.core.Point3;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.Objdetect;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by Alvin on 9/8/2017.
@@ -167,4 +169,18 @@ public abstract class VisionUtil {
 		return retval;
 	}
 
+	public static String[] enumToString(Class<? extends Enum<?>> e){
+		return Arrays.toString(e.getEnumConstants()).replaceAll("^.|.$", "").split(", ");
+	}
+
+	public static int getSetIndex(Set<? extends Object> set, Object value){
+		if(set != null){
+			int idx = 0;
+			for(Object o: set){
+				if(o.equals(value)) return idx;
+				idx++;
+			}
+		}
+		return -1;
+	}
 }

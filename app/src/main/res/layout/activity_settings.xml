@@ -110,37 +110,52 @@
 
         </LinearLayout>
 
-        <RadioGroup
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="1">
-            <RadioButton android:id="@+id/target_left"
+
+            <EditText
+                android:id="@+id/nexusXShift"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/target_left"
-                android:onClick="onRadioButtonClicked" />
-            <RadioButton android:id="@+id/target_right"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="0dp"
+                android:ems="3"
+                android:inputType="numberSigned|numberDecimal"/>
+
+            <EditText
+                android:id="@+id/nexusZShift"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/target_right"
-                android:onClick="onRadioButtonClicked" />
-            <RadioButton android:id="@+id/tuning_mode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/tuning_mode"
-                android:onClick="onRadioButtonClicked" />
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="10dp"
+                android:ems="3"
+                android:inputType="numberSigned|numberDecimal"/>
 
             <Switch
                 android:id="@+id/flashlight"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="0.46"
+                android:layout_weight="0.3"
                 android:onClick="onSwitchClicked"
                 android:paddingLeft="20dp"
+                android:ems="5"
                 android:text="@string/flashlight"/>
 
-        </RadioGroup>
+            <Button
+                android:id="@+id/deleteProfile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="50dp"
+                android:text="@string/delete_profile"
+                android:textAlignment="center"
+                android:textSize="12sp"/>
+
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -154,25 +169,20 @@
                 android:layout_weight="1"
                 android:orientation="horizontal">
 
-                <EditText
-                    android:id="@+id/nexusXShift"
+                <Spinner
+                    android:id="@+id/targetModeSelection"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_alignParentStart="true"
-                    android:layout_marginStart="0dp"
-                    android:ems="3"
-                    android:inputType="numberSigned|numberDecimal"/>
+                    android:layout_height="wrap_content"/>
 
-                <EditText
-                    android:id="@+id/nexusZShift"
+                <Spinner
+                    android:id="@+id/processorSelection"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_alignParentStart="true"
-                    android:layout_marginStart="10dp"
-                    android:ems="3"
-                    android:inputType="numberSigned|numberDecimal"/>
+                    android:layout_height="wrap_content"/>
+
+                <Spinner
+                    android:id="@+id/profileSelection"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
             </LinearLayout>
 

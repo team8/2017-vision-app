@@ -13,6 +13,7 @@ import android.widget.EditText;
  */
 
 public class StoredDoubleEntry implements TextWatcher {
+
 	private double data_value = 0;
 
 	private EditText textEntry;
@@ -36,6 +37,10 @@ public class StoredDoubleEntry implements TextWatcher {
 		return data_value;
 	}
 
+	public void reset(){
+		textEntry.removeTextChangedListener(this);
+	}
+
 	@Override
 	public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 	@Override
@@ -49,7 +54,7 @@ public class StoredDoubleEntry implements TextWatcher {
 			editor.putFloat(name, (float) data_value);
 			editor.apply();
 		} catch (NumberFormatException e){
-			Log.d("FRC8.SettingsActivity", "Invalid " + name + " value");
+			Log.d("FRC8.StoredDoubleEntry", "Invalid " + name + " value");
 		}
 	}
 }

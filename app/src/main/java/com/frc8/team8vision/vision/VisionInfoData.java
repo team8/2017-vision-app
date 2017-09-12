@@ -1,5 +1,7 @@
 package com.frc8.team8vision.vision;
 
+import com.frc8.team8vision.util.DataExistsCallback;
+
 import org.opencv.core.Mat;
 
 /**
@@ -24,7 +26,7 @@ public class VisionInfoData {
 			});
 
 	private static VisionData<Mat> imageMat = new VisionDataSynchronized<>("frame", null, null, new DataExistsCallback<Mat>(){});
-	private static VisionData<Boolean> trackingLeft = new VisionData<>(null, true, new DataExistsCallback<Boolean>() {});
+	private static VisionData<Boolean> trackingLeft = new VisionData<>(null, false, new DataExistsCallback<Boolean>() {});
 
 	public static void setXDist(VisionData<Double> x_value){
 		x_dist.set(x_value);
@@ -38,8 +40,8 @@ public class VisionInfoData {
 		}
 		imageMat.set(image);
 	}
-	public static void setIsTrackingLeft(boolean trackingLeft){
-		VisionInfoData.trackingLeft.set(trackingLeft);
+	public static void setIsTrackingLeft(Boolean doesTrackLeft){
+		VisionInfoData.trackingLeft.set(doesTrackLeft);
 	}
 
 	public static Double getXDist(){
@@ -51,7 +53,10 @@ public class VisionInfoData {
 	public static Mat getFrame(){
 		return imageMat.get();
 	}
-	public static boolean isTrackingLeft(){
+	public static Boolean isTrackingLeft(){
 		return trackingLeft.get();
+	}
+	public static Boolean leftRaw(){
+		return trackingLeft.getRaw();
 	}
 }

@@ -142,6 +142,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
 		setSliderValues();
+		setVisionProcessor();
 		JSONVisionDataThread.getInstance().resume();
 		JPEGStreamerThread.getInstance().resume();
 	}
@@ -229,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		VisionData[] out_data = visionProcessor.getProcessor().process(input, mask);
 		if((Integer)out_data[VisionProcessorBase.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
-			== VisionProcessorBase.EXCECUTION_CODE_OKAY){
+			!= VisionProcessorBase.EXCECUTION_CODE_OKAY){
 			Log.e(TAG, "track Error:\n\t" +
 					out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
 		}
@@ -255,8 +256,17 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		// Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		for (int i = 0; i < 6; i++) {
-			sliderValues[i] = preferences.getInt(Constants.kSliderNames[i], Constants.kSliderDefaultValues[i]);
+			sliderValues[i] = preferences.getInt(SettingsActivity.getProfile() + "_" +
+					Constants.kSliderNames[i], Constants.kSliderDefaultValues[i]);
 		}
+	}
+
+	private void setVisionProcessor(){
+		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		String type_name= preferences.getString(SettingsActivity.getProfile() + "_"
+			+ Constants.kProcessorType, "CENTROID");
+		ProcessorSelector.ProcessorType type = ProcessorSelector.ProcessorType.valueOf(type_name);
+		visionProcessor.setProcessor(type);
 	}
 
 	@Override

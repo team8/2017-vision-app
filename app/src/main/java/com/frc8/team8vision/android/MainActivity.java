@@ -33,6 +33,7 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.Locale;
+import java.util.PropertyResourceBundle;
 
 /**
  * The app's startup activity, as suggested by its name. Handles all
@@ -141,8 +142,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		isSettingsPaused = false;
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
+
 		setSliderValues();
 		setVisionProcessor();
+		setDynamicTracking();
+
 		JSONVisionDataThread.getInstance().resume();
 		JPEGStreamerThread.getInstance().resume();
 	}
@@ -166,9 +170,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		CameraInfo.setDims(height, width);
 		VisionInfoData.setIsTrackingLeft(SettingsActivity.trackingLeftTarget());
 
+
 		// Reduce exposure and turn on flashlight - to be used with reflective tape
 		mCameraView.setParameters();
-		mCameraView.toggleFlashLight(SettingsActivity.flashlightOn());
+		mCameraView.toggleFlashLight(this.getFlashlightOn());
 
 		if (!this.isFocusLocked() || !isSettingsPaused) {
 			JSONVisionDataThread.getInstance().resume();
@@ -267,6 +272,18 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			+ Constants.kProcessorType, "CENTROID");
 		ProcessorSelector.ProcessorType type = ProcessorSelector.ProcessorType.valueOf(type_name);
 		visionProcessor.setProcessor(type);
+	}
+
+	private void setDynamicTracking(){
+		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		VisionInfoData.setIsDynamicTracking(
+				preferences.getBoolean(SettingsActivity.getProfile() + "_" + Constants.kDynamicTracking, false));
+	}
+
+	private boolean getFlashlightOn(){
+		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+		return preferences.getBoolean(SettingsActivity.getProfile() + "_" + Constants.kFlashlightOn,
+				SettingsActivity.flashlightOn());
 	}
 
 	@Override

@@ -33,6 +33,7 @@ public class Constants {
             kProfileSelection = "ProfileSelection",
             kProfileName = "Profile_Name",
             kTrackingLeft = "Tracking_Left",
+            kDynamicTracking = "DynamicTracking",
             kFlashlightOn = "Flashlight_On",
             kTuningMode = "Tuning_Mode",
             kXShift = "X_Shift",

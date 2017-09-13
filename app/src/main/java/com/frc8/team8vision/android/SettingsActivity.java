@@ -29,7 +29,7 @@ import java.util.Arrays;
  */
 public class SettingsActivity extends AppCompatActivity {
     public enum TargetMode{
-        RIGHT_TARGET, LEFT_TARGET, TUNING
+        RIGHT_TARGET, LEFT_TARGET, DYNAMIC_TARGET, TUNING
     }
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
@@ -37,7 +37,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static SelectionDropdown targetMode = null, processorMode = null, profileMode = null;
     private static String profile;
 
-    private static boolean trackingLeft, tuningMode, flashlightOn = false;
+    private static boolean trackingLeft, dynamicTrack, tuningMode, flashlightOn = false;
 
     private SharedPreferences preferences;
 
@@ -69,18 +69,25 @@ public class SettingsActivity extends AppCompatActivity {
 				TargetMode mode = TargetMode.valueOf(label.toUpperCase());
 				switch (mode){
 					case LEFT_TARGET:
+						dynamicTrack = false;
 						tuningMode = false;
 						trackingLeft = true;
 						break;
 					case RIGHT_TARGET:
+						dynamicTrack = false;
 						tuningMode = false;
 						trackingLeft = false;
+						break;
+					case DYNAMIC_TARGET:
+						tuningMode = false;
+						dynamicTrack = true;
 						break;
 					case TUNING:
 						tuningMode = true;
 						break;
 				}
 				editor.putBoolean(profile+"_" + Constants.kTrackingLeft, trackingLeft);
+				editor.putBoolean(profile+"_" + Constants.kDynamicTracking, dynamicTrack);
 				editor.putBoolean(profile+"_" + Constants.kTuningMode, tuningMode);
 				editor.apply();
 			}
@@ -119,6 +126,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void initialize(final String profileIn){
         profile = profileIn;
         trackingLeft = preferences.getBoolean(profile+"_" + Constants.kTrackingLeft, true);
+		dynamicTrack = preferences.getBoolean(profile+"_" + Constants.kDynamicTracking, true);
         flashlightOn = preferences.getBoolean(profile+"_" + Constants.kFlashlightOn, false);
 		tuningMode = preferences.getBoolean(profile+"_" + Constants.kTuningMode, false);
 
@@ -145,9 +153,15 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static boolean trackingLeftTarget() { return trackingLeft; }
 
-    public static boolean flashlightOn() { return flashlightOn; }
+    public static boolean flashlightOn() {
+		return flashlightOn;
+    }
 
 	public static void setTrackingLeft(boolean isTrackingLeft) {trackingLeft = isTrackingLeft;}
+
+	public static boolean isDynamicTracking(){
+		return dynamicTrack;
+	}
 
     public static boolean tuningMode() { return tuningMode;}
 

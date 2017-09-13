@@ -61,11 +61,17 @@ public abstract class VisionUtil {
 			Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
 			double oneArea = oneRect.area(), twoArea = twoRect.area();
 
-			if (oneArea<=twoArea){
-				trackingLeft = oneRect.x >= twoRect.x;
-				contours.remove(0);
+			if(VisionInfoData.isDynamicTracking()){
+				if (oneArea<=twoArea){
+					trackingLeft = oneRect.x >= twoRect.x;
+					contours.remove(0);
+				} else {
+					trackingLeft = oneRect.x < twoRect.x;
+				}
 			} else {
-				trackingLeft = oneRect.x < twoRect.x;
+				if(trackingLeft == oneRect.x > twoRect.x){
+					contours.remove(0);
+				}
 			}
 		}
 

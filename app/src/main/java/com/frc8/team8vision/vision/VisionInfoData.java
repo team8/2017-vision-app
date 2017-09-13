@@ -27,6 +27,7 @@ public class VisionInfoData {
 
 	private static VisionData<Mat> imageMat = new VisionDataSynchronized<>("frame", null, null, new DataExistsCallback<Mat>(){});
 	private static VisionData<Boolean> trackingLeft = new VisionData<>(null, false, new DataExistsCallback<Boolean>() {});
+	private static VisionData<Boolean> dynamicTracking = new VisionData<>(null, false, new DataExistsCallback<Boolean>() {});
 
 	public static void setXDist(VisionData<Double> x_value){
 		x_dist.set(x_value);
@@ -43,6 +44,9 @@ public class VisionInfoData {
 	public static void setIsTrackingLeft(Boolean doesTrackLeft){
 		VisionInfoData.trackingLeft.set(doesTrackLeft);
 	}
+	public static void setIsDynamicTracking(Boolean doesDynamicTrack){
+		VisionInfoData.dynamicTracking.set(doesDynamicTrack);
+	}
 
 	public static Double getXDist(){
 		return x_dist.get();
@@ -56,7 +60,7 @@ public class VisionInfoData {
 	public static Boolean isTrackingLeft(){
 		return trackingLeft.get();
 	}
-	public static Boolean leftRaw(){
-		return trackingLeft.getRaw();
+	public static Boolean isDynamicTracking(){
+		return dynamicTracking.get();
 	}
 }

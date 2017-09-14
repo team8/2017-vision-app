@@ -93,6 +93,8 @@ public abstract class AbstractVisionThread implements Runnable {
             Log.e(k_tag, "Cannot pause a running thread!");
 
         setThreadState(ThreadState.PAUSED);
+
+        onPause();
     }
 
     protected abstract void onPause();

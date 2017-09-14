@@ -11,9 +11,9 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import com.frc8.team8vision.networking.JPEGStreamerClient;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.R;
-import com.frc8.team8vision.networking.JPEGStreamerThread;
 import com.frc8.team8vision.networking.JSONVisionDataThread;
 import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
@@ -33,7 +33,6 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.Locale;
-import java.util.PropertyResourceBundle;
 
 /**
  * The app's startup activity, as suggested by its name. Handles all
@@ -122,13 +121,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		visionProcessor = new ProcessorSelector();
 		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
 
-		JSONVisionDataThread.getInstance().start(this, JSONVisionDataThread.WriteState.JSON);
-		JPEGStreamerThread.getInstance().start(this);
+		JSONVisionDataThread.getInstance().start(this);
+		JPEGStreamerClient.getInstance().start(this);
 	}
 
 	@Override
 	public void onPause() {
-		JPEGStreamerThread.getInstance().pause();
+		JPEGStreamerClient.getInstance().pause();
 		JSONVisionDataThread.getInstance().pause();
 		super.onPause();
 
@@ -148,12 +147,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		setDynamicTracking();
 
 		JSONVisionDataThread.getInstance().resume();
-		JPEGStreamerThread.getInstance().resume();
+		JPEGStreamerClient.getInstance().resume();
 	}
 
 	public void onDestroy() {
-		JSONVisionDataThread.getInstance().destroy();
-		JPEGStreamerThread.getInstance().destroy();
+		JSONVisionDataThread.getInstance().stop();
+		JPEGStreamerClient.getInstance().stop();
 
 		super.onDestroy();
 
@@ -177,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		if (!this.isFocusLocked() || !isSettingsPaused) {
 			JSONVisionDataThread.getInstance().resume();
-			JPEGStreamerThread.getInstance().resume();
+			JPEGStreamerClient.getInstance().resume();
 		}
 	}
 

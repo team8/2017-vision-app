@@ -3,7 +3,6 @@ package com.frc8.team8vision.networking;
 import android.util.Log;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
@@ -13,15 +12,15 @@ import java.net.Socket;
  */
 public abstract class AbstractVisionClient extends AbstractVisionThread {
 
-    public enum ServerState {
+    public enum SocketState {
         PRE_INIT, ATTEMPTING_CONNECTION, OPEN
     }
 
     protected boolean m_testing = false;
     protected int m_port = 0;
-    protected ServerSocket m_server;
-    protected Socket m_client;
-    protected ServerState m_serverState = ServerState.PRE_INIT;
+    protected String m_hostName = "";
+    protected Socket m_client = new Socket();
+    protected SocketState m_socketState = SocketState.PRE_INIT;
 
     protected AbstractVisionClient(final String k_threadName) {
         super(k_threadName);
@@ -37,13 +36,15 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
      * Starts the server thread
      *
      * @param k_updateRate Update rate of the thread
+     * @param k_hostName The host name as a string
+     * @param k_port The port to connect to the server
      * @param k_testing Whether or not we are testing
-     * @param k_port The port to connect the server to
      */
-    public void start(final int k_updateRate, final boolean k_testing, final int k_port)
+    public void start(final long k_updateRate, final String k_hostName, final int k_port, final boolean k_testing)
     {
         super.start(k_updateRate);
 
+        m_hostName = k_hostName;
         m_testing = k_testing;
         m_port = k_port;
     }
@@ -51,20 +52,12 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
     @Override
     protected void init() {
 
-        if (m_serverState != ServerState.PRE_INIT) {
+        if (m_socketState != SocketState.PRE_INIT) {
             Log.e(k_tag, "Thread has already been initialized. Aborting...");
             return;
         }
 
-        // Try to create the server
-        try {
-            m_server = new ServerSocket(m_port);
-            m_server.setReuseAddress(true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        setServerState(ServerState.ATTEMPTING_CONNECTION);
+        m_socketState = SocketState.ATTEMPTING_CONNECTION;
     }
 
     /**
@@ -72,41 +65,85 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
      *
      * @param state State of the server
      */
-    protected void setServerState(ServerState state) {
-        m_serverState = state;
+    protected void setSocketState(SocketState state) {
+        m_socketState = state;
+    }
+
+    @Override
+    protected void onStop() {
+
+        closeSocket();
+    }
+
+    @Override
+    protected void onResume() {}
+
+    @Override
+    protected void onPause() {}
+
+    /**
+     * Attempts to close the current socket.
+     */
+    protected void closeSocket() {
+
+        try {
+            m_client.close();
+        } catch (IOException e) {
+            Log.e(k_tag, "Error closing socket on stop: " + e.getStackTrace().toString());
+        }
     }
 
     /**
-     * Pauses the thread until a connection is established
+     * Attempt to connect to the server.
      *
-     * @return The state after execution
+     * @return Whether or not we connected successfully.
      */
-    private ServerState acceptConnection(){
+    protected SocketState attemptConnection() {
 
         try {
-            // Pause thread until we accept from the client
-            Log.e(k_tag, "Trying to connect to client...");
-            m_client = m_server.accept();
-            Log.e(k_tag, "Connected to client: " + m_client.getPort());
-            return ServerState.OPEN;
+            // Attempt to connect to server
+            m_client = new Socket(m_hostName, m_port);
+            return SocketState.OPEN;
         } catch (IOException e) {
-            e.printStackTrace();
-            return ServerState.ATTEMPTING_CONNECTION;
+            return SocketState.ATTEMPTING_CONNECTION;
         }
+    }
+
+    /**
+     * Check to see if we are still connected to the server.
+     *
+     * @return Whether or not we are connected.
+     */
+    protected SocketState checkConnection() {
+
+        final boolean connected = m_client.isConnected();
+
+        if (!connected) Log.e(k_tag, "Lost connection to socket.");
+
+        return connected ? SocketState.OPEN : SocketState.ATTEMPTING_CONNECTION;
     }
 
     @Override
     protected void update()
     {
-        switch (m_serverState){
+        switch (m_threadState) {
 
-            case PRE_INIT:
-                Log.e(k_tag, "Thread is not initialized while in update.");
-                break;
+            case RUNNING: {
+                switch (m_socketState) {
 
-            case ATTEMPTING_CONNECTION:
-                setServerState(acceptConnection());
+                    case PRE_INIT: {
+                        Log.e(k_tag, "Thread client state is not initialized while in update.");
+                        break;
+                    } case OPEN: {
+                        setSocketState(checkConnection());
+                        break;
+                    } case ATTEMPTING_CONNECTION: {
+                        setSocketState(attemptConnection());
+                        break;
+                    }
+                }
                 break;
+            }
         }
     }
 }

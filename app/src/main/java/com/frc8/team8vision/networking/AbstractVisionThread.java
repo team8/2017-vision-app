@@ -11,10 +11,15 @@ import android.util.Log;
  */
 public abstract class AbstractVisionThread implements Runnable {
 
+    public enum ThreadState {
+        PRE_INIT, RUNNING, PAUSED, STOPPED
+    }
+
     protected double m_secondsAlive = 0.0d;
     protected long m_updateRate;
     protected final String k_tag;
     protected boolean m_isRunning = false;
+    protected ThreadState m_threadState = ThreadState.PRE_INIT;
 
     public double getTimeAlive() { return m_secondsAlive; }
     public boolean isRunning() { return m_isRunning; }
@@ -23,10 +28,16 @@ public abstract class AbstractVisionThread implements Runnable {
         k_tag = Constants.kTAG + k_threadName;
     }
 
+    protected void setThreadState(ThreadState state) {
+        m_threadState = state;
+    }
+
     /**
      * Starts the thread
      */
     public void start(final long k_updateRate) {
+
+        m_threadState = ThreadState.PRE_INIT;
 
         m_updateRate = k_updateRate;
 
@@ -52,6 +63,11 @@ public abstract class AbstractVisionThread implements Runnable {
 
         while (m_isRunning) {
 
+            if (m_threadState == ThreadState.PRE_INIT) {
+                Log.e(k_tag, "Thread has not been initialized in running state! Aborting...");
+                return;
+            }
+
             update();
 
             try {
@@ -69,16 +85,45 @@ public abstract class AbstractVisionThread implements Runnable {
     protected abstract void update();
 
     /**
-     * Handles destroying the thread
+     * Pauses the thread
      */
-    public void destroy() {
+    public void pause() {
 
-        m_isRunning = false;
-        tearDown();
+        if (!m_isRunning)
+            Log.e(k_tag, "Cannot pause a running thread!");
+
+        setThreadState(ThreadState.PAUSED);
     }
 
+    protected abstract void onPause();
+
     /**
-     * Called by {@link #destroy} whenever the thread should stop running
+     * Resume the thread
      */
-    protected abstract void tearDown();
+    public void resume() {
+
+        if (m_threadState == ThreadState.STOPPED || !m_isRunning)
+            Log.e(k_tag, "Thread cannot be resumed from a stopped state!");
+
+        setThreadState(ThreadState.RUNNING);
+
+        onResume();
+    }
+
+    protected abstract void onResume();
+
+    /**
+     * Stops the thread completely
+     */
+    public void stop() {
+
+        Log.i(k_tag, "Stopping thread...");
+
+        m_isRunning = false;
+        setThreadState(ThreadState.STOPPED);
+
+        onStop();
+    }
+
+    protected abstract void onStop();
 }

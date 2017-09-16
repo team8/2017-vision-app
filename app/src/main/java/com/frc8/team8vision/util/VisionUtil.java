@@ -36,7 +36,7 @@ public abstract class VisionUtil {
 	 * Remove all contours that are below a certain area threshold. Used to remove salt noise.
 	 */
 	public static MatOfPoint bestContour(ArrayList<MatOfPoint> contours, Mat input) {
-		boolean trackingLeft = VisionInfoData.isTrackingLeft();
+		boolean trackingLeft = VisionPreferences.isTrackingLeft();
 
 		// Sort contours in decreasing order of area
 		Collections.sort(contours, new Comparator<MatOfPoint>() {
@@ -61,7 +61,7 @@ public abstract class VisionUtil {
 			Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
 			double oneArea = oneRect.area(), twoArea = twoRect.area();
 
-			if(VisionInfoData.isDynamicTracking()){
+			if(VisionPreferences.isDynamicTracking()){
 				if (oneArea<=twoArea){
 					trackingLeft = oneRect.x >= twoRect.x;
 					contours.remove(0);
@@ -75,8 +75,7 @@ public abstract class VisionUtil {
 			}
 		}
 
-		SettingsActivity.setTrackingLeft(trackingLeft);
-		VisionInfoData.setIsTrackingLeft(trackingLeft);
+		VisionPreferences.setTrackingLeft(trackingLeft);
 
 		// If no target found
 		if (contours.size() == 0){
@@ -101,7 +100,7 @@ public abstract class VisionUtil {
 				tapeWidth = Constants.kTapeWidth, depth = Constants.kPegLength, conv = 0.0393701 * 12 / 1.95;
 		double leftX, topY, rightX, bottomY;
 
-		if(VisionInfoData.isTrackingLeft()){
+		if(VisionPreferences.isTrackingLeft()){
 			leftX = -width/2;
 			topY = height/2;
 			rightX = leftX+tapeWidth;

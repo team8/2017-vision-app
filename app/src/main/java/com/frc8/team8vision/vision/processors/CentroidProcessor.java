@@ -3,6 +3,7 @@ package com.frc8.team8vision.vision.processors;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.android.SettingsActivity;
 import com.frc8.team8vision.android.CameraInfo;
+import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionData;
@@ -39,7 +40,7 @@ public class CentroidProcessor extends VisionProcessorBase {
 
 		if (contour != null) {
 			Point[] corners = getCorners(contour);
-			output_data[IDX_OUT_ZDIST].set(getPosePnP(corners, input)[2] + SettingsActivity.getNexusZShift());
+			output_data[IDX_OUT_ZDIST].set(getPosePnP(corners, input)[2] + VisionPreferences.getZ_shift());
 
 			// Draw corners on image
 			for (int i = 0; i < corners.length; i++) {
@@ -51,7 +52,7 @@ public class CentroidProcessor extends VisionProcessorBase {
 					: corners[1].x - (Constants.kVisionTargetWidth/2) * ratio;
 
 			Imgproc.circle(input, new Point(target, CameraInfo.Height()/2), 5, new Scalar(0, 0, 255), -1);
-			output_data[IDX_OUT_XDIST].set((target - CameraInfo.Width()/2) / ratio + SettingsActivity.getNexusXShift());
+			output_data[IDX_OUT_XDIST].set((target - CameraInfo.Width()/2) / ratio + VisionPreferences.getX_shift());
 
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();

@@ -1,6 +1,7 @@
 package com.frc8.team8vision.vision.processors;
 
 import com.frc8.team8vision.android.SettingsActivity;
+import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionData;
 
@@ -34,8 +35,8 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 		if (contour != null) {
 			Point[] corners = getCorners(contour);
 			double[] tvecs = getPosePnP(corners, input);
-			output_data[IDX_OUT_ZDIST].set(tvecs[2] + SettingsActivity.getNexusZShift());
-			output_data[IDX_OUT_XDIST].set(tvecs[0] + SettingsActivity.getNexusXShift());
+			output_data[IDX_OUT_ZDIST].set(tvecs[2] + VisionPreferences.getZ_shift());
+			output_data[IDX_OUT_XDIST].set(tvecs[0] + VisionPreferences.getX_shift());
 
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();

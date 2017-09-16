@@ -15,6 +15,7 @@ import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.menu.HSVSeekBar;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.util.OnSelectionChangedCallback;
+import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.ProcessorSelector;
 
 import java.util.ArrayList;
@@ -33,11 +34,11 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private HSVSeekBar[] seekBars = new HSVSeekBar[6];
-	private static StoredDoubleEntry xShiftEntry = null, zShiftEntry = null;
-    private static SelectionDropdown targetMode = null, processorMode = null, profileMode = null;
-    private static String profile;
+	private StoredDoubleEntry xShiftEntry = null, zShiftEntry = null;
+    private SelectionDropdown targetMode = null, processorMode = null, profileMode = null;
+    private String profile;
 
-    private static boolean trackingLeft, dynamicTrack, tuningMode, flashlightOn = false;
+    private boolean trackingLeft, dynamicTrack, tuningMode, flashlightOn = false;
 
     private SharedPreferences preferences;
 
@@ -46,7 +47,7 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences = VisionPreferences.preferences();
 
         profile = preferences.getString(Constants.kProfileName, "Default");
         profileMode = new SelectionDropdown(R.id.profileSelection, Constants.kProfileSelection,
@@ -56,7 +57,7 @@ public class SettingsActivity extends AppCompatActivity {
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putString(Constants.kProfileName, label);
                 editor.apply();
-                initialize(label);
+                loadSettings(label);
             }
         });
 		profileMode.initProfiles(profile);
@@ -108,7 +109,7 @@ public class SettingsActivity extends AppCompatActivity {
 			@Override
 			public void onClick(View v) {
 				String newProfile = profileMode.removeElement(profile);
-				initialize(newProfile);
+				loadSettings(newProfile);
 			}
 		});
 
@@ -120,10 +121,10 @@ public class SettingsActivity extends AppCompatActivity {
 					 Constants.kSliderNames[i], this);
 		}
 
-        initialize(profile);
+        loadSettings(profile);
     }
 
-    private void initialize(final String profileIn){
+    private void loadSettings(final String profileIn){
         profile = profileIn;
         trackingLeft = preferences.getBoolean(profile+"_" + Constants.kTrackingLeft, true);
 		dynamicTrack = preferences.getBoolean(profile+"_" + Constants.kDynamicTracking, true);
@@ -150,40 +151,4 @@ public class SettingsActivity extends AppCompatActivity {
         editor.putBoolean(profile+"_" + Constants.kFlashlightOn, flashlightOn);
         editor.apply();
     }
-
-    public static boolean trackingLeftTarget() { return trackingLeft; }
-
-    public static boolean flashlightOn() {
-		return flashlightOn;
-    }
-
-	public static void setTrackingLeft(boolean isTrackingLeft) {trackingLeft = isTrackingLeft;}
-
-	public static boolean isDynamicTracking(){
-		return dynamicTrack;
-	}
-
-    public static boolean tuningMode() { return tuningMode;}
-
-    public static void setFlashlightOn(boolean value) { flashlightOn = value; }
-
-	public static double getNexusXShift() {
-		if(xShiftEntry != null){
-            return xShiftEntry.getValue();
-        } else {
-            return 0;
-        }
-	}
-	public static double getNexusZShift() {
-		if(zShiftEntry != null){
-            return zShiftEntry.getValue();
-        } else {
-            return 0;
-        }
-	}
-
-	public static String getProfile(){
-		return profile;
-	}
-
 }

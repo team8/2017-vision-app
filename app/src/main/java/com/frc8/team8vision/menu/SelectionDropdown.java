@@ -14,6 +14,7 @@ import android.widget.Spinner;
 import com.frc8.team8vision.android.SettingsActivity;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.util.OnSelectionChangedCallback;
+import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.util.VisionUtil;
 
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ public class SelectionDropdown implements AdapterView.OnItemSelectedListener {
 		if(isDynamic){
 			adapter.add("+ Add Item");
 			Set<String> st = getSet();
-			int idx = VisionUtil.getSetIndex(st, SettingsActivity.getProfile());
+			int idx = VisionUtil.getSetIndex(st, VisionPreferences.getProfile());
 			spinner.setSelection(idx < 0 ? preferences.getInt(name+"_index", 0) : idx);
 		}
 

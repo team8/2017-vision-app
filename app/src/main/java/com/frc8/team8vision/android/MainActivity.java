@@ -15,6 +15,7 @@ import com.frc8.team8vision.networking.JPEGStreamerClient;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.networking.JSONVisionDataThread;
+import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
@@ -48,12 +49,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private ProcessorSelector visionProcessor;
 
 	private static SketchyCameraView mCameraView;
-	private static boolean isSettingsPaused = false;
+	private boolean isSettingsPaused = false;
 
 	private long lastCycleTimestamp = 0;
 
 	private int mWidth = 0, mHeight = 0;
-	private int[] sliderValues = new int[6];
 	private int mResolutionFactor = 3;      // Divides screen images by given factor
 
 
@@ -119,7 +119,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
 
 		visionProcessor = new ProcessorSelector();
-		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
+//		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
+		VisionPreferences.initialize(this);
 
 		JSONVisionDataThread.getInstance().start(this);
 		JPEGStreamerClient.getInstance().start(this);
@@ -142,9 +143,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		super.onResume();
 		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
 
-		setSliderValues();
-		setVisionProcessor();
-		setDynamicTracking();
+		VisionPreferences.updateSettings();
+		visionProcessor.setProcessor(VisionPreferences.getProcessorType());
 
 		JSONVisionDataThread.getInstance().resume();
 		JPEGStreamerClient.getInstance().resume();
@@ -167,12 +167,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mHeight = height;
 
 		CameraInfo.setDims(height, width);
-		VisionInfoData.setIsTrackingLeft(SettingsActivity.trackingLeftTarget());
 
 
 		// Reduce exposure and turn on flashlight - to be used with reflective tape
 		mCameraView.setParameters();
-		mCameraView.toggleFlashLight(this.getFlashlightOn());
+		mCameraView.toggleFlashLight(VisionPreferences.isFlashlightOn());
 
 		if (!this.isFocusLocked() || !isSettingsPaused) {
 			JSONVisionDataThread.getInstance().resume();
@@ -219,6 +218,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		Mat mask = new Mat();
 		Mat imageHSV = new Mat();
 
+		int[] sliderValues = VisionPreferences.getSliderValues();
+
 		// Create mask from hsv threshold
 		Scalar lower_bound = new Scalar(sliderValues[0], sliderValues[1], sliderValues[2]),
 				upper_bound = new Scalar(sliderValues[3], sliderValues[4], sliderValues[5]);
@@ -226,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		Core.inRange(imageHSV, lower_bound, upper_bound, mask);
 
 		// Tuning mode displays the result of the threshold
-		if (SettingsActivity.tuningMode()) {
+		if (VisionPreferences.isTuningMode()) {
 			Core.normalize(mask, mask, 0, 255, Core.NORM_MINMAX, input.type(), new Mat());
 			Core.convertScaleAbs(mask, mask);
 			return mask;
@@ -256,35 +257,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         return input;
     }
 
-	private void setSliderValues(){
-		// Retrieve HSV threshold stored in app, see SettingsActivity.java for more info
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		for (int i = 0; i < 6; i++) {
-			sliderValues[i] = preferences.getInt(SettingsActivity.getProfile() + "_" +
-					Constants.kSliderNames[i], Constants.kSliderDefaultValues[i]);
-		}
-	}
-
-	private void setVisionProcessor(){
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		String type_name= preferences.getString(SettingsActivity.getProfile() + "_"
-			+ Constants.kProcessorType, "CENTROID");
-		ProcessorSelector.ProcessorType type = ProcessorSelector.ProcessorType.valueOf(type_name);
-		visionProcessor.setProcessor(type);
-	}
-
-	private void setDynamicTracking(){
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		VisionInfoData.setIsDynamicTracking(
-				preferences.getBoolean(SettingsActivity.getProfile() + "_" + Constants.kDynamicTracking, false));
-	}
-
-	private boolean getFlashlightOn(){
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-		return preferences.getBoolean(SettingsActivity.getProfile() + "_" + Constants.kFlashlightOn,
-				SettingsActivity.flashlightOn());
-	}
-
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
@@ -308,10 +280,5 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 		int lockValue = preferences.getInt("Focus Lock Value", 0);
 		return lockValue >= 80;
-	}
-
-	public static void toggleFlash(boolean flashlightOn) {
-		SettingsActivity.setFlashlightOn(flashlightOn);
-		mCameraView.toggleFlashLight(flashlightOn);
 	}
 }

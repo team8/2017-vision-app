@@ -2,6 +2,9 @@ package com.frc8.team8vision.util;
 
 import com.frc8.team8vision.R;
 
+import org.opencv.core.MatOfPoint3f;
+import org.opencv.core.Point3;
+
 /**
  * Stores various constants to be used by the rest of the app.
  *
@@ -14,37 +17,57 @@ public class Constants {
 
     // roboRIO networking constants
     public static final String kRIOHostName = "localhost";
-    public static final int kDataPortNumber = 8008;
-    public static final int kVisionPortNumber = 8009;
-    public static final long kDataUpdateRateMS = 5;
-    public static final long kVisionUpdateRateMS = 10;
-    public static final long kChangeStateWaitMS = 200;
-    public static final long kVisionIdleTimeS = 5;
+    public static final int
+        kDataPortNumber = 8008,
+        kVisionPortNumber = 8009;
+    public static final long
+        kDataUpdateRateMS = 5,
+        kVisionUpdateRateMS = 10,
+        kChangeStateWaitMS = 200,
+        kVisionIdleTimeS = 5;
 
     // HSV threshold slider constants
-    public static final int[] kSliderIds = {R.id.hLow, R.id.sLow, R.id.vLow, R.id.hHigh, R.id.sHigh, R.id.vHigh},
-                              kSliderReadoutIds = {R.id.hLowInfo, R.id.sLowInfo, R.id.vLowInfo, R.id.hHighInfo, R.id.sHighInfo, R.id.vHighInfo},
-                              kSliderDefaultValues = {0, 0, 0, 180, 255, 255};
+    public static final int[]
+        kSliderIds = {R.id.hLow, R.id.sLow, R.id.vLow, R.id.hHigh, R.id.sHigh, R.id.vHigh},
+        kSliderReadoutIds = {R.id.hLowInfo, R.id.sLowInfo, R.id.vLowInfo, R.id.hHighInfo, R.id.sHighInfo, R.id.vHighInfo},
+        kSliderDefaultValues = {0, 0, 0, 180, 255, 255};
     public static final String[] kSliderNames = {"Minimum Hue", "Minimum Saturation", "Minimum Value",
                                                  "Maximum Hue", "Maximum Saturation", "Maximum Value"};
 
     // Setting option names
     public static final String
-            kProfileSelection = "ProfileSelection",
-            kProfileName = "Profile_Name",
-            kTrackingLeft = "Tracking_Left",
-            kDynamicTracking = "DynamicTracking",
-            kFlashlightOn = "Flashlight_On",
-            kTuningMode = "Tuning_Mode",
-            kXShift = "X_Shift",
-            kZShift = "Z_Shift",
-            kTargetMode = "TargetMode",
-            kProcessorMode = "ProcessorMode",
-            kProcessorType = "ProcessorType"
-    ;
+        kProfileSelection = "ProfileSelection",
+        kProfileName = "Profile_Name",
+        kTrackingLeft = "Tracking_Left",
+        kDynamicTracking = "DynamicTracking",
+        kFlashlightOn = "Flashlight_On",
+        kTuningMode = "Tuning_Mode",
+        kXShift = "X_Shift",
+        kZShift = "Z_Shift",
+        kTargetMode = "TargetMode",
+        kProcessorMode = "ProcessorMode",
+        kProcessorType = "ProcessorType";
 
     // Physical specs of peg (all measurements are in inches)
     public static final double kVisionTargetWidth = 10.25, kTapeWidth = 2, kVisionTargetHeight = 5.0, kPegLength = 10.5;
+
+    // Source points
+    public static final MatOfPoint3f kLeftSourcePoints = new MatOfPoint3f(
+        new Point3(-kVisionTargetWidth/2           ,  kVisionTargetHeight/2, 0),
+        new Point3(-kVisionTargetWidth/2+kTapeWidth,  kVisionTargetHeight/2, 0),
+        new Point3(-kVisionTargetWidth/2           , -kVisionTargetHeight/2, 0),
+        new Point3(-kVisionTargetWidth/2+kTapeWidth, -kVisionTargetHeight/2, 0)
+    );
+    public static final MatOfPoint3f kRightSourcePoints = new MatOfPoint3f(
+        new Point3(kVisionTargetWidth/2-kTapeWidth,  kVisionTargetHeight/2, 0),
+        new Point3(kVisionTargetWidth/2           ,  kVisionTargetHeight/2, 0),
+        new Point3(kVisionTargetWidth/2-kTapeWidth, -kVisionTargetHeight/2, 0),
+        new Point3(kVisionTargetWidth/2           , -kVisionTargetHeight/2, 0)
+    );
+
+    public static final MatOfPoint3f kAllSourcePoints = new MatOfPoint3f(
+        VisionUtil.concat(kLeftSourcePoints.toArray(), kRightSourcePoints.toArray())
+    );
 
     // Camera calibration constants
 

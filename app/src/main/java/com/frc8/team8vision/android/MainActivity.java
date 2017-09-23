@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView = new SketchyCameraView(this, -1);
 		setContentView(mCameraView);
 		mCameraView.setCvCameraViewListener(this);
-		mCameraView.setMaxFrameSize(1920/ mResolutionFactor,1080/ mResolutionFactor);
+		mCameraView.setMaxFrameSize(1920 / mResolutionFactor, 1080 / mResolutionFactor);
 
 		visionProcessor = new ProcessorSelector();
 //		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
@@ -235,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		VisionData[] out_data = visionProcessor.getProcessor().process(input, mask);
 		if((Integer)out_data[VisionProcessorBase.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
-			!= VisionProcessorBase.EXCECUTION_CODE_OKAY){
+			!= VisionProcessorBase.EXECUTION_CODE_OKAY){
 			Log.e(TAG, "track Error:\n\t" +
 					out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
 		}

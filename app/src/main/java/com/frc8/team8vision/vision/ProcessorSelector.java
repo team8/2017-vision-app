@@ -1,6 +1,7 @@
 package com.frc8.team8vision.vision;
 
 import com.frc8.team8vision.vision.processors.CentroidProcessor;
+import com.frc8.team8vision.vision.processors.DoubleTargetProcessor;
 import com.frc8.team8vision.vision.processors.SingleTargetProcessor;
 
 import org.opencv.core.Mat;
@@ -13,9 +14,10 @@ import java.util.HashMap;
  */
 
 public class ProcessorSelector {
+
 	public enum ProcessorType {
-		CENTROID, SINGLE_TARGET
-	};
+		CENTROID, SINGLE_TARGET, DOUBLE_TARGET
+	}
 
 	private HashMap<ProcessorType, VisionProcessorBase> processor_map = new HashMap<ProcessorType, VisionProcessorBase>();
 	private ProcessorType processor = null;
@@ -36,6 +38,9 @@ public class ProcessorSelector {
 					break;
 				case SINGLE_TARGET:
 					processor_map.put(type, new SingleTargetProcessor());
+					break;
+				case DOUBLE_TARGET:
+					processor_map.put(type, new DoubleTargetProcessor());
 					break;
 			}
 		}

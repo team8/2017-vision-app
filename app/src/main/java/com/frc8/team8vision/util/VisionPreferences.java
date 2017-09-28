@@ -37,7 +37,7 @@ public class VisionPreferences {
 		profile = preferences.getString(Constants.kProfileName, profile);
 		trackingLeft = preferences.getBoolean(profile+"_"+Constants.kTrackingLeft, trackingLeft);
 		dynamicTracking = preferences.getBoolean(profile+"_"+Constants.kDynamicTracking, dynamicTracking);
-		dynamicTracking = preferences.getBoolean(profile+"_"+ Constants.kTuningMode, tuningMode);
+		tuningMode = preferences.getBoolean(profile+"_"+ Constants.kTuningMode, tuningMode);
 		flashlightOn = preferences.getBoolean(profile+"_"+Constants.kFlashlightOn, flashlightOn);
 		x_shift = preferences.getFloat(profile+"_"+Constants.kXShift, x_shift);
 		z_shift = preferences.getFloat(profile+"_"+Constants.kZShift, z_shift);

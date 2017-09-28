@@ -52,22 +52,19 @@ public class Constants {
     public static final double kVisionTargetWidth = 10.25, kTapeWidth = 2, kVisionTargetHeight = 5.0, kPegLength = 10.5;
 
     // Source points
-    public static final MatOfPoint3f kLeftSourcePoints = new MatOfPoint3f(
+    public static final Point3[]
+    kLeftSourcePoints = {
         new Point3(-kVisionTargetWidth/2           ,  kVisionTargetHeight/2, 0),
         new Point3(-kVisionTargetWidth/2+kTapeWidth,  kVisionTargetHeight/2, 0),
         new Point3(-kVisionTargetWidth/2           , -kVisionTargetHeight/2, 0),
         new Point3(-kVisionTargetWidth/2+kTapeWidth, -kVisionTargetHeight/2, 0)
-    );
-    public static final MatOfPoint3f kRightSourcePoints = new MatOfPoint3f(
+    },
+    kRightSourcePoints = {
         new Point3(kVisionTargetWidth/2-kTapeWidth,  kVisionTargetHeight/2, 0),
         new Point3(kVisionTargetWidth/2           ,  kVisionTargetHeight/2, 0),
         new Point3(kVisionTargetWidth/2-kTapeWidth, -kVisionTargetHeight/2, 0),
         new Point3(kVisionTargetWidth/2           , -kVisionTargetHeight/2, 0)
-    );
-
-    public static final MatOfPoint3f kAllSourcePoints = new MatOfPoint3f(
-        VisionUtil.concat(kLeftSourcePoints.toArray(), kRightSourcePoints.toArray())
-    );
+    };
 
     // Camera calibration constants
 

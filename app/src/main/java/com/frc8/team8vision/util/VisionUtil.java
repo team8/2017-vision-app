@@ -1,8 +1,6 @@
 package com.frc8.team8vision.util;
 
 import com.frc8.team8vision.android.CameraInfo;
-import com.frc8.team8vision.android.SettingsActivity;
-import com.frc8.team8vision.vision.VisionInfoData;
 
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Mat;
@@ -12,16 +10,12 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
-import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -30,59 +24,59 @@ import java.util.Set;
 public abstract class VisionUtil {
 
 
-	/**
-	 * Remove all contours that are below a certain area threshold. Used to remove salt noise.
-	 */
-	public static MatOfPoint bestContour(ArrayList<MatOfPoint> contours, Mat input) {
-		boolean trackingLeft = VisionPreferences.isTrackingLeft();
-
-		// Sort contours in decreasing order of area
-		Collections.sort(contours, new Comparator<MatOfPoint>() {
-			public int compare(MatOfPoint one, MatOfPoint two) {
-				return Double.compare(Imgproc.contourArea(two), Imgproc.contourArea(one));
-			}
-		});
-		double threshold = 0.4 * Imgproc.contourArea(contours.get(0));
-
-		List<MatOfPoint> found = new ArrayList<>();
-		for (MatOfPoint contour: contours) {
-			if (Imgproc.contourArea(contour) < threshold) found.add(contour);
-		}
-		contours.removeAll(found);
-		Imgproc.drawContours(input, found, -1, new Scalar(0, 0, 255));
-
-		// Were both strips of tape detected?
-		if (contours.size() >= 2) {
-			Imgproc.drawContours(input, contours, 0, new Scalar(255, 0, 0));
-			Imgproc.drawContours(input, contours, 1, new Scalar(0, 255, 0));
-			// Calculate bounding rectangles of contours to compare x position
-			Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
-			double oneArea = oneRect.area(), twoArea = twoRect.area();
-
-			if(VisionPreferences.isDynamicTracking()){
-				if (oneArea<=twoArea){
-					trackingLeft = oneRect.x >= twoRect.x;
-					contours.remove(0);
-				} else {
-					trackingLeft = oneRect.x < twoRect.x;
-				}
-			} else {
-				if(trackingLeft == oneRect.x > twoRect.x){
-					contours.remove(0);
-				}
-			}
-		}
-
-		VisionPreferences.setTrackingLeft(trackingLeft);
-
-		// If no target found
-		if (contours.size() == 0){
-			return null;
-		}
-
-		// The first contour should be the optimal one
-		return contours.get(0);
-	}
+//	/**
+//	 * Remove all contours that are below a certain area threshold. Used to remove salt noise.
+//	 */
+//	public static MatOfPoint bestContour(ArrayList<MatOfPoint> contours, Mat input) {
+//		boolean trackingLeft = VisionPreferences.isTrackingLeft();
+//
+//		// Sort contours in decreasing order of area
+//		Collections.sort(contours, new Comparator<MatOfPoint>() {
+//			public int compare(MatOfPoint one, MatOfPoint two) {
+//				return Double.compare(Imgproc.contourArea(two), Imgproc.contourArea(one));
+//			}
+//		});
+//		double threshold = 0.4 * Imgproc.contourArea(contours.get(0));
+//
+//		List<MatOfPoint> found = new ArrayList<>();
+//		for (MatOfPoint contour: contours) {
+//			if (Imgproc.contourArea(contour) < threshold) found.add(contour);
+//		}
+//		contours.removeAll(found);
+//		Imgproc.drawContours(input, found, -1, new Scalar(0, 0, 255));
+//
+//		// Were both strips of tape detected?
+//		if (contours.size() >= 2) {
+//			Imgproc.drawContours(input, contours, 0, new Scalar(255, 0, 0));
+//			Imgproc.drawContours(input, contours, 1, new Scalar(0, 255, 0));
+//			// Calculate bounding rectangles of contours to compare x position
+//			Rect oneRect = Imgproc.boundingRect(contours.get(0)), twoRect = Imgproc.boundingRect(contours.get(1));
+//			double oneArea = oneRect.area(), twoArea = twoRect.area();
+//
+//			if(VisionPreferences.isDynamicTracking()){
+//				if (oneArea<=twoArea){
+//					trackingLeft = oneRect.x >= twoRect.x;
+//					contours.remove(0);
+//				} else {
+//					trackingLeft = oneRect.x < twoRect.x;
+//				}
+//			} else {
+//				if(trackingLeft == oneRect.x > twoRect.x){
+//					contours.remove(0);
+//				}
+//			}
+//		}
+//
+//		VisionPreferences.setTrackingLeft(trackingLeft);
+//
+//		// If no target found
+//		if (contours.size() == 0){
+//			return null;
+//		}
+//
+//		// The first contour should be the optimal one
+//		return contours.get(0);
+//	}
 
 	/**
 	 * Determines the transformation of a camera relative to the vision target.
@@ -144,25 +138,26 @@ public abstract class VisionUtil {
 	}
 
 	/**
-	 * Identify four corners of the contour. Sketchy implementation but it works.
+	 * Identify four corners of the contour.
 	 */
-	public static Point[] getCorners(MatOfPoint contour) {
-		Point[] arr = contour.toArray(), retval = new Point[4];
+	public static Point[] getCorners(final MatOfPoint contour, final int shift) {
+		Point[] arr = contour.toArray(), corners = new Point[4];
 		Arrays.sort(arr, new Comparator<Point>() {
 			public int compare(Point p1, Point p2) {
 				return (int)((p1.x + p1.y) - (p2.x + p2.y));
 			}
 		});
-		retval[0] = arr[0];
-		retval[3] = arr[arr.length-1];
+		corners[0] = arr[0];
+		corners[3] = arr[arr.length-1];
 		Arrays.sort(arr, new Comparator<Point>() {
 			public int compare(Point p1, Point p2) {
 				return (int)((p1.x - p1.y) - (p2.x - p2.y));
 			}
 		});
-		retval[2] = arr[0];
-		retval[1] = arr[arr.length-1];
-		return retval;
+		corners[2] = arr[0];
+		corners[1] = arr[arr.length-1];
+		for (int i = 0; i < 4; i++) corners[i].x -= shift;
+		return corners;
 	}
 
 	public static String[] enumToString(Class<? extends Enum<?>> e){
@@ -172,7 +167,7 @@ public abstract class VisionUtil {
 	public static int getSetIndex(Set<? extends Object> set, Object value){
 		if (set != null) {
 			int idx = 0;
-			for (Object o: set) {
+			for (Object o : set) {
 				if (o.equals(value)) return idx;
 				idx++;
 			}
@@ -180,6 +175,13 @@ public abstract class VisionUtil {
 		return -1;
 	}
 
+	/**
+	 * Adds two arrays of the same type together
+	 * @param a The first array
+	 * @param b The second array
+	 * @param <T> The type of both arrays
+	 * @return The concatenated array
+	 */
 	public static <T> T[] concat(T[] a, T[] b) {
 		@SuppressWarnings("unchecked")
 		T[] result = (T[])Array.newInstance(a.getClass().getComponentType(), a.length + b.length);

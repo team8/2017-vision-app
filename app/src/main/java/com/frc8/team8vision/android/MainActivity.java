@@ -19,6 +19,7 @@ import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
+import com.frc8.team8vision.vision.ProcessorSelector.ProcessorType;
 import com.frc8.team8vision.vision.VisionData;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -38,6 +39,7 @@ import java.util.Locale;
 /**
  * The app's startup activity, as suggested by its name. Handles all
  * camera operations and vision processing.
+ *
  * @author Calvin Yan
  */
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -56,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private int mWidth = 0, mHeight = 0;
 	private int mResolutionFactor = 3;      // Divides screen images by given factor
 
+	private boolean opencvLoaded = false;
 
 	/**
 	 * The delay between starting the app and loading OpenCV libraries means that
@@ -64,12 +67,22 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 		@Override
 		public void onManagerConnected(int status) {
+
+			onAllLoaded();
+
 			Mat intrinsicMatrix = null;
 			MatOfDouble distCoeffs = null;
 
 			switch (status) {
 				case LoaderCallbackInterface.SUCCESS: {
+
+					opencvLoaded = true;
+
+					VisionPreferences.updateSettings();
+					visionProcessor.setProcessor(VisionPreferences.getProcessorType());
+
 					Log.i(TAG, "OpenCV load success");
+
 					// Start camera feed
 					mCameraView.enableView();
 
@@ -77,7 +90,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 					 * Load intrinsic matrix and distortion coefficients of camera;
 					 * used for pose estimation
 					 */
-
 					intrinsicMatrix = new Mat(3, 3, CvType.CV_64F);
 					distCoeffs = new MatOfDouble();
 
@@ -111,7 +123,14 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+
 		super.onCreate(savedInstanceState);
+
+		// Load the OpenCV library
+		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
+	}
+
+	private void onAllLoaded() {
 
 		mCameraView = new SketchyCameraView(this, -1);
 		setContentView(mCameraView);
@@ -119,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.setMaxFrameSize(1920 / mResolutionFactor, 1080 / mResolutionFactor);
 
 		visionProcessor = new ProcessorSelector();
-//		visionProcessor.setProcessor(ProcessorSelector.ProcessorType.CENTROID);
+		visionProcessor.setProcessor(ProcessorType.CENTROID);
 		VisionPreferences.initialize(this);
 
 		JSONVisionDataThread.getInstance().start(this);
@@ -128,29 +147,37 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onPause() {
+
 		JPEGStreamerClient.getInstance().pause();
 		JSONVisionDataThread.getInstance().pause();
+
 		super.onPause();
 
-		if (mCameraView != null) {
+		if (mCameraView != null)
 			mCameraView.disableView();
-		}
 	}
 
 	@Override
 	public void onResume() {
-		isSettingsPaused = false;
+
 		super.onResume();
-		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
+		isSettingsPaused = false;
 
-		VisionPreferences.updateSettings();
-		visionProcessor.setProcessor(VisionPreferences.getProcessorType());
+		if (opencvLoaded) {
 
-		JSONVisionDataThread.getInstance().resume();
-		JPEGStreamerClient.getInstance().resume();
+			mCameraView.enableView();
+
+			VisionPreferences.updateSettings();
+			visionProcessor.setProcessor(VisionPreferences.getProcessorType());
+
+			JSONVisionDataThread.getInstance().resume();
+			JPEGStreamerClient.getInstance().resume();
+		}
 	}
 
+	@Override
 	public void onDestroy() {
+
 		JSONVisionDataThread.getInstance().stop();
 		JPEGStreamerClient.getInstance().stop();
 
@@ -163,6 +190,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onCameraViewStarted(int width, int height) {
+
 		mWidth = width;
 		mHeight = height;
 
@@ -240,8 +268,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 					out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
 		}
 
-		VisionData<Double> xDist = (out_data[VisionProcessorBase.IDX_OUT_XDIST]);
-		VisionData<Double> zDist = (out_data[VisionProcessorBase.IDX_OUT_ZDIST]);
+		VisionData<Double> xDist = out_data[VisionProcessorBase.IDX_OUT_XDIST];
+		VisionData<Double> zDist = out_data[VisionProcessorBase.IDX_OUT_ZDIST];
 
 		VisionInfoData.setXDist(xDist);
 		VisionInfoData.setZDist(zDist);

@@ -60,6 +60,8 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
         m_socketState = SocketState.ATTEMPTING_CONNECTION;
     }
 
+    protected abstract void afterInit();
+
     /**
      * Sets the state of the server
      *
@@ -145,5 +147,9 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
                 break;
             }
         }
+
+        afterUpdate();
     }
+
+    protected abstract void afterUpdate();
 }

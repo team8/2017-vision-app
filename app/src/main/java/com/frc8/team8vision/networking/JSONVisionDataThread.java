@@ -115,11 +115,8 @@ public class JSONVisionDataThread extends AbstractVisionThread {
      */
     private void writeVisionData() {
 
-        HashMap<String, Object> data = new HashMap<>();
-        data.put("state", "STREAMING");
-        data.put("x_displacement", VisionInfoData.getXDist());
-        data.put("z_displacement", VisionInfoData.getZDist());
-        writeData(data);
+        final JSONObject json = VisionInfoData.getJsonRepresentation();
+        writeJSON(json);
     }
 
 //    /**
@@ -142,26 +139,6 @@ public class JSONVisionDataThread extends AbstractVisionThread {
 //        }
 //        return retval;
 //    }
-
-    /**
-     * Writes to JSON based on given keys and values.
-     *
-     * @param data Set of keys and values to populate the JSON file.
-     */
-    private void writeData(HashMap<String,Object> data) {
-
-        // Create JSONObject from given map data
-        JSONObject json = new JSONObject();
-        try {
-            for (String key : data.keySet()) {
-                json.put(key, data.get(key));
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        writeJSON(json);
-    }
 
     /**
      * Takes JSONObject and writes data to file.

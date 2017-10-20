@@ -2,12 +2,15 @@ package com.frc8.team8vision.vision;
 
 import com.frc8.team8vision.util.DataExistsCallback;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.opencv.core.Mat;
 
-/**
- * Created by Alvin on 9/10/2017.
- */
+import java.util.HashMap;
 
+/**
+ * Contains various vision info data to be referenced in a static context
+ */
 public class VisionInfoData {
 
 	private static VisionData<Double> x_dist = new VisionDataSynchronized<>("x_dist", Double.NaN, null,
@@ -53,5 +56,18 @@ public class VisionInfoData {
 	}
 	public static Mat getFrame() {
 		return imageMat.get();
+	}
+
+	public static JSONObject getJsonRepresentation() {
+
+		JSONObject json = new JSONObject();
+		try {
+			json.put("x_displacement", VisionInfoData.getXDist());
+			json.put("z_displacement", VisionInfoData.getZDist());
+			return json;
+		} catch (JSONException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

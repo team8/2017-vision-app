@@ -95,6 +95,8 @@ public class JPEGStreamerClient extends AbstractVisionClient {
 		super.start(Constants.kVisionUpdateRateMS, Constants.kRIOHostName, Constants.kVisionPortNumber, false);
 	}
 
+	@Override protected void afterInit() {}
+
 	/**
 	 * Writes image matrix data to the socket.
 	 */
@@ -124,6 +126,11 @@ public class JPEGStreamerClient extends AbstractVisionClient {
 		}
 	}
 
+	/**
+	 * Convert image to a byte array for transmission.
+	 *
+	 * @return Byte array representing image.
+	 */
 	private byte[] getImageJPEGBytes() {
 
 		// Initialize images
@@ -140,7 +147,7 @@ public class JPEGStreamerClient extends AbstractVisionClient {
 	}
 
 	@Override
-	public void update() {
+	public void afterUpdate() {
 
 		switch (m_threadState) {
 

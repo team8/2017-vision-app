@@ -2,6 +2,7 @@ package com.frc8.team8vision.networking;
 
 import com.frc8.team8vision.util.Constants;
 
+import android.app.Activity;
 import android.util.Log;
 
 /**
@@ -15,6 +16,7 @@ public abstract class AbstractVisionThread implements Runnable {
         PRE_INIT, RUNNING, PAUSED, STOPPED
     }
 
+    protected Activity m_activity;
     protected double m_secondsAlive = 0.0d;
     protected long m_updateRate;
     protected final String k_tag;
@@ -35,7 +37,9 @@ public abstract class AbstractVisionThread implements Runnable {
     /**
      * Starts the thread
      */
-    public void start(final long k_updateRate) {
+    public void start(Activity activity, final long k_updateRate) {
+
+        m_activity = activity;
 
         m_threadState = ThreadState.PRE_INIT;
 

@@ -2,6 +2,8 @@ package com.frc8.team8vision.networking;
 
 import com.frc8.team8vision.vision.VisionInfoData;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -10,6 +12,19 @@ import java.io.OutputStreamWriter;
  * Sends vision information (x and z distance) through a socket to the RoboRIO.
  */
 public class VisionDataSocketClient extends AbstractVisionClient {
+
+    private static VisionDataSocketClient s_instance;
+
+    /**
+     * @return The instance of the singleton
+     */
+    public static VisionDataSocketClient getInstance() {
+
+        if (s_instance == null)
+            s_instance = new VisionDataSocketClient();
+
+        return s_instance;
+    }
 
     public VisionDataSocketClient() {
 
@@ -46,9 +61,14 @@ public class VisionDataSocketClient extends AbstractVisionClient {
             OutputStream out = m_client.getOutputStream();
             OutputStreamWriter writer = new OutputStreamWriter(out);
 
-            String json = VisionInfoData.getJsonRepresentation().toString();
+            JSONObject jsonObject = VisionInfoData.getJsonRepresentation();
 
-            writer.write(json);
+            if (jsonObject != null) {
+
+                String json = jsonObject.toString();
+
+                writer.write(json);
+            }
 
         } catch (IOException e) {
 

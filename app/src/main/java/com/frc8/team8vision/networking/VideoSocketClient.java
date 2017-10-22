@@ -15,55 +15,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Separate Thread to send image data to roboRIO
- * Strategies:
- *  - Write mat data to JSON, then read JSON
+ * Writes the current video frame to a socket to the RoboRIO
  *
- * <h1><b>Fields</b></h1>
- * 	<ul>
- * 		<li>Instance and State variables:
- * 			<ul>
- * 				<li>{@link VideoSocketClient#s_instance} (Singleton): Private static instance of this class</li>
- * 			    <li>{@link VideoSocketClient#m_activity} (private): Activity hosting the thread</li>
- * 			</ul>
- * 		</li>
- * 		<li>Utility variables:
- * 			<ul>
- * 				<li>{@link AbstractVisionThread#m_secondsAlive}: Private count of seconds the program has run for</li>
- * 			</ul>
- * 		</li>
- * 	</ul>
- *
- * <h1><b>Accessors and Mutators</b></h1>
- * 	<ul>
- * 		<li>{@link VideoSocketClient#getInstance()}</li>
- * 	</ul>
- *
- * <h1><b>External Access Functions</b>
- * 	<br><BLOCKQUOTE>For using as a wrapper for RIOdroid</BLOCKQUOTE></h1>
- * 	<ul>
- * 		<li>{@link VideoSocketClient#start(Activity)}</li>
- * 		<li>{@link AbstractVisionThread#pause()}</li>
- * 		<li>{@link AbstractVisionThread#resume()}</li>
- * 	</ul>
- *
- * 	<h1><b>Internal Functions</b>
- * 	<br><BLOCKQUOTE>Paired with external access functions. These compute the actual function for the external access</BLOCKQUOTE></h1>
- * 	<ul>
- * 		<li>{@link VideoSocketClient#writeFrameToSocket()}</li>
- * 	</ul>
- *
- * Created by Alvin on 2/16/2017.
- * @author Alvin
+ * @author Quintin Dwight
  */
-
 public class VideoSocketClient extends AbstractVisionClient {
 
-	// Instance and state variables
 	private static VideoSocketClient s_instance;
-	private Activity m_activity;
 
-	// Utility variables
 	private double m_lastFrameTime = 0;
 
 	/**
@@ -90,11 +49,9 @@ public class VideoSocketClient extends AbstractVisionClient {
 	 *
 	 * @param activity Parent activity of the Thread
 	 */
-	public void start(Activity activity){
+	public void start(Activity activity) {
 
-		m_activity = activity;
-
-		super.start(Constants.kVisionUpdateRateMS, Constants.kRIOHostName, Constants.kVisionPortNumber, false);
+		super.start(activity, Constants.kVisionUpdateRateMS, Constants.kRIOHostName, Constants.kVisionPortNumber, false);
 	}
 
 	@Override protected void afterInit() {}

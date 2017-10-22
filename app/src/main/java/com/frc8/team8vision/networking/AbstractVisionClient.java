@@ -1,5 +1,6 @@
 package com.frc8.team8vision.networking;
 
+import android.app.Activity;
 import android.util.Log;
 
 import java.io.IOException;
@@ -28,21 +29,22 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
 
     @Override
     @Deprecated
-    public void start(final long k_updateRate) {
-        super.start(k_updateRate);
+    public void start(Activity activity, final long k_updateRate) {
+        super.start(null, k_updateRate);
     }
 
     /**
      * Starts the server thread
      *
+     * @param activity Current activity
      * @param k_updateRate Update rate of the thread
      * @param k_hostName The host name as a string
      * @param k_port The port to connect to the server
      * @param k_testing Whether or not we are testing
      */
-    public void start(final long k_updateRate, final String k_hostName, final int k_port, final boolean k_testing)
+    public void start(Activity activity, final long k_updateRate, final String k_hostName, final int k_port, final boolean k_testing)
     {
-        super.start(k_updateRate);
+        super.start(activity, k_updateRate);
 
         m_hostName = k_hostName;
         m_testing = k_testing;

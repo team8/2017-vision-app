@@ -1,27 +1,20 @@
 package com.frc8.team8vision.networking;
 
 import android.app.Activity;
-import android.content.Context;
 import android.util.Log;
 
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.vision.VisionInfoData;
 
 
-import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-
-import java.util.HashMap;
 
 /**
  * Writes image data to JSON to be read by the RoboRIO
  *
  * @author Quintin Dwight
  */
-public class JSONVisionDataThread extends AbstractVisionThread {
+public class JSONVisionDataThread extends AbstractJSONWriter {
 
     // Instance and state variables
     public static JSONVisionDataThread s_instance;
@@ -32,15 +25,17 @@ public class JSONVisionDataThread extends AbstractVisionThread {
      * Cannot be called outside as a Singleton
      */
     private JSONVisionDataThread() {
-        super("JSONVisionDataThread");
+        super("JSONVisionDataThread", "data.json");
     }
 
     /**
      * @return The instance of the singleton
      */
-    public static JSONVisionDataThread getInstance(){
-        if(s_instance == null)
+    public static JSONVisionDataThread getInstance() {
+
+        if (s_instance == null)
             s_instance = new JSONVisionDataThread();
+
         return s_instance;
     }
 
@@ -51,9 +46,7 @@ public class JSONVisionDataThread extends AbstractVisionThread {
      */
     public void start(Activity activity) {
 
-        m_activity = activity;
-
-        super.start(Constants.kDataUpdateRateMS);
+        super.start(activity, Constants.kDataUpdateRateMS);
     }
 
     @Override
@@ -73,13 +66,12 @@ public class JSONVisionDataThread extends AbstractVisionThread {
     @Override
     public void onStop() {}
 
-    /**
-     * Writes matrix data to JSON file
-     */
-    private void writeVisionData() {
+    @Override
+    protected JSONObject getJSON() {
 
         final JSONObject json = VisionInfoData.getJsonRepresentation();
-        writeJSON(json);
+
+        return json;
     }
 
 //    /**
@@ -102,36 +94,4 @@ public class JSONVisionDataThread extends AbstractVisionThread {
 //        }
 //        return retval;
 //    }
-
-    /**
-     * Takes JSONObject and writes data to file.
-     *
-     * @param json JSONObject storing vision data.
-     */
-    private void writeJSON(JSONObject json) {
-
-        try {
-
-            OutputStreamWriter osw = new OutputStreamWriter(m_activity.openFileOutput("data.json", Context.MODE_PRIVATE));
-            osw.write(json.toString());
-            osw.flush();
-            osw.close();
-
-        } catch (IOException e) {
-
-            Log.e(k_tag, "Could not write data in JSON form: " + e.toString());
-        }
-    }
-
-    @Override
-    protected void update() {
-
-        switch (m_threadState) {
-
-            case RUNNING: {
-                writeVisionData();
-                break;
-            }
-        }
-    }
 }

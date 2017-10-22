@@ -9,11 +9,11 @@ import java.io.OutputStreamWriter;
 /**
  * Sends vision information (x and z distance) through a socket to the RoboRIO.
  */
-public class VisionDataClient extends AbstractVisionClient {
+public class VisionDataSocketClient extends AbstractVisionClient {
 
-    public VisionDataClient() {
+    public VisionDataSocketClient() {
 
-        super("VisionDataClient");
+        super("VisionDataSocketClient");
     }
 
     @Override protected void afterInit() {}

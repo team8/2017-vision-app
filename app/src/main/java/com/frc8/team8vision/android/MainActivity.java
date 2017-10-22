@@ -11,7 +11,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
-import com.frc8.team8vision.networking.JPEGStreamerClient;
+import com.frc8.team8vision.networking.VideoSocketClient;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.networking.JSONVisionDataThread;
@@ -142,13 +142,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		VisionPreferences.initialize(this);
 
 		JSONVisionDataThread.getInstance().start(this);
-		JPEGStreamerClient.getInstance().start(this);
+		VideoSocketClient.getInstance().start(this);
 	}
 
 	@Override
 	public void onPause() {
 
-		JPEGStreamerClient.getInstance().pause();
+		VideoSocketClient.getInstance().pause();
 		JSONVisionDataThread.getInstance().pause();
 
 		super.onPause();
@@ -171,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			visionProcessor.setProcessor(VisionPreferences.getProcessorType());
 
 			JSONVisionDataThread.getInstance().resume();
-			JPEGStreamerClient.getInstance().resume();
+			VideoSocketClient.getInstance().resume();
 		}
 	}
 
@@ -179,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	public void onDestroy() {
 
 		JSONVisionDataThread.getInstance().stop();
-		JPEGStreamerClient.getInstance().stop();
+		VideoSocketClient.getInstance().stop();
 
 		super.onDestroy();
 
@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		if (!this.isFocusLocked() || !isSettingsPaused) {
 			JSONVisionDataThread.getInstance().resume();
-			JPEGStreamerClient.getInstance().resume();
+			VideoSocketClient.getInstance().resume();
 		}
 	}
 

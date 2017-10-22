@@ -23,8 +23,8 @@ import java.io.OutputStream;
  * 	<ul>
  * 		<li>Instance and State variables:
  * 			<ul>
- * 				<li>{@link JPEGStreamerClient#s_instance} (Singleton): Private static instance of this class</li>
- * 			    <li>{@link JPEGStreamerClient#m_activity} (private): Activity hosting the thread</li>
+ * 				<li>{@link VideoSocketClient#s_instance} (Singleton): Private static instance of this class</li>
+ * 			    <li>{@link VideoSocketClient#m_activity} (private): Activity hosting the thread</li>
  * 			</ul>
  * 		</li>
  * 		<li>Utility variables:
@@ -36,13 +36,13 @@ import java.io.OutputStream;
  *
  * <h1><b>Accessors and Mutators</b></h1>
  * 	<ul>
- * 		<li>{@link JPEGStreamerClient#getInstance()}</li>
+ * 		<li>{@link VideoSocketClient#getInstance()}</li>
  * 	</ul>
  *
  * <h1><b>External Access Functions</b>
  * 	<br><BLOCKQUOTE>For using as a wrapper for RIOdroid</BLOCKQUOTE></h1>
  * 	<ul>
- * 		<li>{@link JPEGStreamerClient#start(Activity)}</li>
+ * 		<li>{@link VideoSocketClient#start(Activity)}</li>
  * 		<li>{@link AbstractVisionThread#pause()}</li>
  * 		<li>{@link AbstractVisionThread#resume()}</li>
  * 	</ul>
@@ -50,17 +50,17 @@ import java.io.OutputStream;
  * 	<h1><b>Internal Functions</b>
  * 	<br><BLOCKQUOTE>Paired with external access functions. These compute the actual function for the external access</BLOCKQUOTE></h1>
  * 	<ul>
- * 		<li>{@link JPEGStreamerClient#writeFrameToSocket()}</li>
+ * 		<li>{@link VideoSocketClient#writeFrameToSocket()}</li>
  * 	</ul>
  *
  * Created by Alvin on 2/16/2017.
  * @author Alvin
  */
 
-public class JPEGStreamerClient extends AbstractVisionClient {
+public class VideoSocketClient extends AbstractVisionClient {
 
 	// Instance and state variables
-	private static JPEGStreamerClient s_instance;
+	private static VideoSocketClient s_instance;
 	private Activity m_activity;
 
 	// Utility variables
@@ -70,21 +70,23 @@ public class JPEGStreamerClient extends AbstractVisionClient {
 	 * Creates an instance of this
 	 * Cannot be called outside as a Singleton
 	 */
-	private JPEGStreamerClient() {
-		super("JPEGStreamerClient");
+	private VideoSocketClient() {
+		super("VideoSocketClient");
 	}
 
 	/**
 	 * @return The instance of the singleton
 	 */
-	public static JPEGStreamerClient getInstance(){
+	public static VideoSocketClient getInstance() {
+
 		if(s_instance == null)
-			s_instance = new JPEGStreamerClient();
+			s_instance = new VideoSocketClient();
+
 		return s_instance;
 	}
 
 	/**
-	 * Starts the JPEGStreamerClient Thread
+	 * Starts the VideoSocketClient Thread
 	 *
 	 * @param activity Parent activity of the Thread
 	 */
@@ -101,16 +103,12 @@ public class JPEGStreamerClient extends AbstractVisionClient {
 	 * Writes image matrix data to the socket.
 	 */
 	private void writeFrameToSocket() {
+
 		// Initialize data
-		byte[] imageData = getImageJPEGBytes();
+		byte[] imageData = VisionInfoData.getFrameAsByteArray();
 
 		// Check if data is empty
-		if (imageData == null || imageData.length == 0) {
-
-			// If last frame time exceeds a limit then close the socket
-			if (m_lastFrameTime >= Constants.kVisionIdleTimeS)
-				closeSocket();
-		} else {
+		if (imageData != null && imageData.length != 0) {
 
 			try {
 				// Initialize data streams
@@ -119,31 +117,13 @@ public class JPEGStreamerClient extends AbstractVisionClient {
 
 				dos.writeInt(imageData.length);
 				dos.write(imageData, 0, imageData.length);
+
 			} catch (IOException e) {
+
 				Log.e(k_tag, "Cannot get output stream of socket!");
 				closeSocket();
 			}
 		}
-	}
-
-	/**
-	 * Convert image to a byte array for transmission.
-	 *
-	 * @return Byte array representing image.
-	 */
-	private byte[] getImageJPEGBytes() {
-
-		// Initialize images
-		Mat imageRGB = VisionInfoData.getFrame();
-		if (imageRGB == null || imageRGB.empty()) {
-			return null;
-		}
-
-		// Convert Mat to JPEG byte array
-		MatOfByte byteMatrix = new MatOfByte();
-		Imgcodecs.imencode(".jpg", imageRGB, byteMatrix);
-
-		return byteMatrix.toArray();
 	}
 
 	@Override

@@ -2,11 +2,11 @@ package com.frc8.team8vision.networking;
 
 import android.app.Activity;
 import android.content.Context;
+import android.util.Base64;
 import android.util.Log;
 
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.vision.VisionInfoData;
-
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,33 +14,33 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
-import java.util.HashMap;
-
 /**
- * Writes image data to JSON to be read by the RoboRIO
+ * Writes video data (current frame) to json file.
  *
  * @author Quintin Dwight
  */
-public class JSONVisionDataThread extends AbstractVisionThread {
+public class JSONVideoThread extends AbstractVisionThread {
 
     // Instance and state variables
-    public static JSONVisionDataThread s_instance;
+    public static JSONVideoThread s_instance;
     private Activity m_activity;
 
     /**
      * Creates a instance of this
      * Cannot be called outside as a Singleton
      */
-    private JSONVisionDataThread() {
-        super("JSONVisionDataThread");
+    private JSONVideoThread() {
+        super("JSONVideoThread");
     }
 
     /**
      * @return The instance of the singleton
      */
-    public static JSONVisionDataThread getInstance(){
+    public static JSONVideoThread getInstance(){
+
         if(s_instance == null)
-            s_instance = new JSONVisionDataThread();
+            s_instance = new JSONVideoThread();
+
         return s_instance;
     }
 
@@ -74,45 +74,36 @@ public class JSONVisionDataThread extends AbstractVisionThread {
     public void onStop() {}
 
     /**
-     * Writes matrix data to JSON file
+     * Writes matrix data to JSON file.
      */
     private void writeVisionData() {
 
-        final JSONObject json = VisionInfoData.getJsonRepresentation();
+        final byte[] frame = VisionInfoData.getFrameAsByteArray();
+
+        JSONObject json = new JSONObject();
+
+        try {
+
+            json.put("frame", Base64.encodeToString(frame, 0));
+
+        } catch (JSONException e) {
+
+            e.printStackTrace();
+        }
+
         writeJSON(json);
     }
-
-//    /**
-//     * Converts Matrix representing image data to byte array
-//     * @param image Image data
-//     * @return Computed byte array
-//     */
-//    private byte[] toByteArray(Mat image) {
-//        byte[] retval = new byte[image.rows() * image.cols() * image.channels() * 8];
-//        int index = 0;
-//        for (int i = 0; i < image.rows(); i++) {
-//            for (int j = 0; j < image.cols(); j++) {
-//                double[] pixel = image.get(i, j);
-//                for (int k = 0; k < image.channels(); k++) {
-//                    byte[] bytes = new byte[8];
-//                    ByteBuffer.wrap(bytes).putDouble(pixel[k]);
-//                    for (byte b : bytes) retval[index++] = b;
-//                }
-//            }
-//        }
-//        return retval;
-//    }
 
     /**
      * Takes JSONObject and writes data to file.
      *
-     * @param json JSONObject storing vision data.
+     * @param json JSONObject that represents current frame
      */
     private void writeJSON(JSONObject json) {
 
         try {
 
-            OutputStreamWriter osw = new OutputStreamWriter(m_activity.openFileOutput("data.json", Context.MODE_PRIVATE));
+            OutputStreamWriter osw = new OutputStreamWriter(m_activity.openFileOutput("video.json", Context.MODE_PRIVATE));
             osw.write(json.toString());
             osw.flush();
             osw.close();

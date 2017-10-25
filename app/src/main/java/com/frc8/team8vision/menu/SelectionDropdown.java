@@ -124,7 +124,8 @@ public class SelectionDropdown implements AdapterView.OnItemSelectedListener {
 
 		String new_profile = this.elements.get(0);
 		int idx = VisionUtil.getSetIndex(getSet(), new_profile);
-		spinner.setSelection(idx < 0 ? 0 : idx);
+//		spinner.setSelection(idx < 0 ? 0 : idx);
+		spinner.setSelection(0);
 		return new_profile;
 	}
 
@@ -140,7 +141,7 @@ public class SelectionDropdown implements AdapterView.OnItemSelectedListener {
 			final EditText et = new EditText(this.activity);
 			alertDialogBuilder.setView(et);
 
-			alertDialogBuilder.setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+			alertDialogBuilder.setCancelable(true).setPositiveButton("OK", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int id) {
 					String elem = et.getText().toString();
 					addElement(elem);

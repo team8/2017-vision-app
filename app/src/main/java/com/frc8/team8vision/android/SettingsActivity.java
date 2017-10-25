@@ -108,7 +108,12 @@ public class SettingsActivity extends AppCompatActivity {
 		deleteProfile.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				Log.d("DELETE RESULT--------", ""+VisionPreferences.deleteProfile(profile));
 				String newProfile = profileMode.removeElement(profile);
+				SharedPreferences.Editor editor = preferences.edit();
+				editor.putString(Constants.kProfileName, newProfile);
+				editor.apply();
+				profile = newProfile;
 				loadSettings(newProfile);
 			}
 		});

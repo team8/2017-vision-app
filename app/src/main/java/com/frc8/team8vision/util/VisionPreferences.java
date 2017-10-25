@@ -50,6 +50,25 @@ public class VisionPreferences {
 		}
 	}
 
+	public static boolean deleteProfile(String o_profile){
+		editor().remove("my asshole");
+		editor().remove(o_profile+"_"+Constants.kTrackingLeft);
+		editor().remove(o_profile+"_"+Constants.kDynamicTracking);
+		editor().remove(o_profile+"_"+Constants.kTuningMode);
+		editor().remove(o_profile+"_"+Constants.kFlashlightOn);
+		editor().remove(o_profile+"_"+Constants.kXShift);
+		editor().remove(o_profile+"_"+Constants.kZShift);
+		editor().remove(o_profile+"_"+Constants.kProcessorType);
+
+		editor().remove(Constants.kProcessorMode+"_"+o_profile+"_index");
+		editor().remove(Constants.kTargetMode+"_"+o_profile+"_index");
+
+		for(int i=0; i<sliderValues.length; i++){
+			editor().remove(o_profile+"_"+Constants.kSliderNames[i]);
+		}
+		return editor().commit();
+	}
+
 	public static Context context(){return context;}
 	public static SharedPreferences preferences(){return preferences;}
 	public static SharedPreferences.Editor editor(){return preferences.edit();}

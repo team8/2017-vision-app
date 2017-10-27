@@ -7,8 +7,6 @@ import android.preference.PreferenceManager;
 
 import com.frc8.team8vision.vision.ProcessorSelector;
 
-import org.apache.http.params.CoreConnectionPNames;
-
 /**
  * Created by Alvin on 9/16/2017.
  */
@@ -34,15 +32,15 @@ public class VisionPreferences {
 	}
 
 	public static void updateSettings(){
-		profile = preferences.getString(Constants.kProfileName, profile);
-		trackingLeft = preferences.getBoolean(profile+"_"+Constants.kTrackingLeft, trackingLeft);
-		dynamicTracking = preferences.getBoolean(profile+"_"+Constants.kDynamicTracking, dynamicTracking);
-		tuningMode = preferences.getBoolean(profile+"_"+ Constants.kTuningMode, tuningMode);
-		flashlightOn = preferences.getBoolean(profile+"_"+Constants.kFlashlightOn, flashlightOn);
-		x_shift = preferences.getFloat(profile+"_"+Constants.kXShift, x_shift);
-		z_shift = preferences.getFloat(profile+"_"+Constants.kZShift, z_shift);
+		profile = preferences.getString(Constants.kProfileNameSettingsName, profile);
+		trackingLeft = preferences.getBoolean(profile+"_"+Constants.kTrackingLeftSettingsName, trackingLeft);
+		dynamicTracking = preferences.getBoolean(profile+"_"+Constants.kDynamicTrackingSettingsName, dynamicTracking);
+		tuningMode = preferences.getBoolean(profile+"_"+ Constants.kTuningModeSettingsName, tuningMode);
+		flashlightOn = preferences.getBoolean(profile+"_"+Constants.kFlashlightOnSettingsName, flashlightOn);
+		x_shift = preferences.getFloat(profile+"_"+Constants.kXShiftSettingsName, x_shift);
+		z_shift = preferences.getFloat(profile+"_"+Constants.kZShiftSettingsName, z_shift);
 
-		String processorName = preferences.getString(profile+"_"+Constants.kProcessorType, "CENTROID");
+		String processorName = preferences.getString(profile+"_"+Constants.kProcessorTypeSettingsName, "CENTROID");
 		processorType = ProcessorSelector.ProcessorType.valueOf(processorName);
 
 		for(int i=0; i<sliderValues.length; i++){
@@ -66,12 +64,12 @@ public class VisionPreferences {
 
 	public static void setTrackingLeft(boolean isTrackingLeft){
 		trackingLeft = isTrackingLeft;
-		editor().putBoolean(profile+"_"+ Constants.kTrackingLeft, trackingLeft);
+		editor().putBoolean(profile+"_"+ Constants.kTrackingLeftSettingsName, trackingLeft);
 		editor().apply();
 	}
 	public static void setFlashlight(boolean isFlashlightOn){
 		flashlightOn = isFlashlightOn;
-		editor().putBoolean(profile+"_"+Constants.kFlashlightOn, isFlashlightOn);
+		editor().putBoolean(profile+"_"+Constants.kFlashlightOnSettingsName, isFlashlightOn);
 		editor().apply();
 	}
 }

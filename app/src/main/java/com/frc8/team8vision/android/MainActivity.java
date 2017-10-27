@@ -16,6 +16,7 @@ import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.networking.JSONVisionDataThread;
 import com.frc8.team8vision.util.VisionPreferences;
+import com.frc8.team8vision.vision.DataTransferModeSelector;
 import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
@@ -49,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private static long cycleTime = 1000;
 
 	private ProcessorSelector visionProcessor;
+	private DataTransferModeSelector.VisionDataTransferModeSelector visionDataTransferModeSelector;
+	private DataTransferModeSelector.VideoDataTransferModeSelector videoTransferModeSelector;
 
 	private static SketchyCameraView mCameraView;
 	private boolean isSettingsPaused = false;
@@ -139,17 +142,21 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		visionProcessor = new ProcessorSelector();
 		visionProcessor.setProcessor(ProcessorType.CENTROID);
-		VisionPreferences.initialize(this);
 
-		JSONVisionDataThread.getInstance().start(this);
-		VideoSocketClient.getInstance().start(this);
+		visionDataTransferModeSelector = new DataTransferModeSelector.VisionDataTransferModeSelector(this, false);
+		visionDataTransferModeSelector.setTransfererMode(DataTransferModeSelector.DataTransferMode.CAT_JSON);
+
+		videoTransferModeSelector = new DataTransferModeSelector.VideoDataTransferModeSelector(this, false);
+		videoTransferModeSelector.setTransfererMode(DataTransferModeSelector.DataTransferMode.SOCKET);
+
+		VisionPreferences.initialize(this);
 	}
 
 	@Override
 	public void onPause() {
 
-		VideoSocketClient.getInstance().pause();
-		JSONVisionDataThread.getInstance().pause();
+		visionDataTransferModeSelector.getTransferer().pause();
+		videoTransferModeSelector.getTransferer().pause();
 
 		super.onPause();
 
@@ -170,18 +177,18 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			VisionPreferences.updateSettings();
 			visionProcessor.setProcessor(VisionPreferences.getProcessorType());
 
-			JSONVisionDataThread.getInstance().resume();
-			VideoSocketClient.getInstance().resume();
+			visionDataTransferModeSelector.getTransferer().resume();
+			videoTransferModeSelector.getTransferer().resume();
 		}
 	}
 
 	@Override
 	public void onDestroy() {
 
-		JSONVisionDataThread.getInstance().stop();
-		VideoSocketClient.getInstance().stop();
-
 		super.onDestroy();
+
+		visionDataTransferModeSelector.stopAll();
+		videoTransferModeSelector.stopAll();
 
 		if (mCameraView != null) {
 			mCameraView.disableView();
@@ -202,8 +209,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		mCameraView.toggleFlashLight(VisionPreferences.isFlashlightOn());
 
 		if (!this.isFocusLocked() || !isSettingsPaused) {
-			JSONVisionDataThread.getInstance().resume();
-			VideoSocketClient.getInstance().resume();
+			visionDataTransferModeSelector.getTransferer().resume();
+			videoTransferModeSelector.getTransferer().resume();
 		}
 	}
 

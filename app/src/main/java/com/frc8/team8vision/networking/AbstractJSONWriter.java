@@ -3,11 +3,20 @@ package com.frc8.team8vision.networking;
 import android.content.Context;
 import android.util.Log;
 
+import com.frc8.team8vision.util.Constants;
+
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
+/**
+ * Writes information to a json file on the nexus.
+ * The class that implements this needs to override {@link #getJSON()} in order to specify which json data.
+ *
+ * @author Quintin Dwight
+ */
 public abstract class AbstractJSONWriter extends AbstractVisionThread {
 
     protected final String k_fileName;
@@ -39,6 +48,32 @@ public abstract class AbstractJSONWriter extends AbstractVisionThread {
         }
     }
 
+    /**
+     * Writes json with only a state
+     *
+     * @param state The state to write
+     */
+    protected void writeOnlyStateToJSONFile(String state) {
+
+        Log.i(Constants.kTAG, "Writing default values for JSON with state " + state + "...");
+
+        JSONObject json = new JSONObject();
+
+        try {
+            json.put("state", state);
+
+            writeJSONToFile(json);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Get the data to write to the local file.
+     *
+     * @return JSON object representing data
+     */
     protected abstract JSONObject getJSON();
 
     @Override

@@ -18,35 +18,39 @@ public class Constants {
     // roboRIO networking constants
     public static final String kRIOHostName = "localhost";
     public static final int
-        kDataPortNumber = 8008,
-        kVisionPortNumber = 8009;
+            kVisionDataPort = 8008,
+            kVideoPort = 8009;
     public static final long
-        kDataUpdateRateMS = 5,
-        kVisionUpdateRateMS = 10,
-        kChangeStateWaitMS = 200,
-        kVisionIdleTimeS = 5;
+            kDataUpdateRateMS = 5,
+            kVisionUpdateRateMS = 10,
+            kChangeStateWaitMS = 200,
+            kVisionIdleTimeS = 5;
 
     // HSV threshold slider constants
     public static final int[]
-        kSliderIds = {R.id.hLow, R.id.sLow, R.id.vLow, R.id.hHigh, R.id.sHigh, R.id.vHigh},
-        kSliderReadoutIds = {R.id.hLowInfo, R.id.sLowInfo, R.id.vLowInfo, R.id.hHighInfo, R.id.sHighInfo, R.id.vHighInfo},
-        kSliderDefaultValues = {0, 0, 0, 180, 255, 255};
-    public static final String[] kSliderNames = {"Minimum Hue", "Minimum Saturation", "Minimum Value",
-                                                 "Maximum Hue", "Maximum Saturation", "Maximum Value"};
+            kSliderIds = {R.id.hLow, R.id.sLow, R.id.vLow, R.id.hHigh, R.id.sHigh, R.id.vHigh},
+            kSliderReadoutIds = {R.id.hLowInfo, R.id.sLowInfo, R.id.vLowInfo, R.id.hHighInfo, R.id.sHighInfo, R.id.vHighInfo},
+            kSliderDefaultValues = {0, 0, 0, 180, 255, 255};
+    public static final String[] kSliderNames = {
+            "Minimum Hue", "Minimum Saturation", "Minimum Value",
+            "Maximum Hue", "Maximum Saturation", "Maximum Value"
+    };
 
     // Setting option names
     public static final String
-        kProfileSelection = "ProfileSelection",
-        kProfileName = "Profile_Name",
-        kTrackingLeft = "Tracking_Left",
-        kDynamicTracking = "DynamicTracking",
-        kFlashlightOn = "Flashlight_On",
-        kTuningMode = "Tuning_Mode",
-        kXShift = "X_Shift",
-        kZShift = "Z_Shift",
-        kTargetMode = "TargetMode",
-        kProcessorMode = "ProcessorMode",
-        kProcessorType = "ProcessorType";
+            kProfileSelectionSettingsName = "ProfileSelection",
+            kProfileNameSettingsName = "ProfileName",
+            kTrackingLeftSettingsName = "TrackingLeft",
+            kDynamicTrackingSettingsName = "DynamicTracking",
+            kFlashlightOnSettingsName = "FlashlightOn",
+            kTuningModeSettingsName = "TuningMode",
+            kXShiftSettingsName = "XShift",
+            kZShiftSettingsName = "ZShift",
+            kTargetModeSettingsName = "TargetMode",
+            kProcessorModeSettingsName = "ProcessorMode",
+            kProcessorTypeSettingsName = "ProcessorType",
+            kVisionDataTransferModeSettingsName = "VisionDataTransferMode",
+            kVideoDataTransferModeSettingsName = "VideoDataTransferMode";
 
     // Physical specs of peg (all measurements are in inches)
     public static final double kVisionTargetWidth = 10.25, kTapeWidth = 2, kVisionTargetHeight = 5.0, kPegLength = 10.5;

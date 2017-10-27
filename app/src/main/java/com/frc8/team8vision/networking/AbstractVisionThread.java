@@ -35,7 +35,7 @@ public abstract class AbstractVisionThread implements Runnable {
     }
 
     /**
-     * Starts the thread
+     * Starts the thread with a specific update rate.
      */
     public void start(Activity activity, final long k_updateRate) {
 
@@ -92,6 +92,8 @@ public abstract class AbstractVisionThread implements Runnable {
      * Pauses the thread
      */
     public void pause() {
+
+        Log.i(k_tag, "Pausing thread...");
 
         if (!m_isRunning)
             Log.e(k_tag, "Cannot pause a running thread!");

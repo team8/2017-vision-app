@@ -13,19 +13,6 @@ import java.io.OutputStreamWriter;
  */
 public class VisionDataSocketClient extends AbstractVisionClient {
 
-    private static VisionDataSocketClient s_instance;
-
-    /**
-     * @return The instance of the singleton
-     */
-    public static VisionDataSocketClient getInstance() {
-
-        if (s_instance == null)
-            s_instance = new VisionDataSocketClient();
-
-        return s_instance;
-    }
-
     public VisionDataSocketClient() {
 
         super("VisionDataSocketClient");

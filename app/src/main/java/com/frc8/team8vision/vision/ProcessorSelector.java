@@ -10,16 +10,15 @@ import org.opencv.core.MatOfDouble;
 import java.util.HashMap;
 
 /**
- * Created by Alvin on 9/8/2017.
+ * Select which processor to use
  */
-
 public class ProcessorSelector {
 
 	public enum ProcessorType {
 		CENTROID, SINGLE_TARGET, DOUBLE_TARGET
 	}
 
-	private HashMap<ProcessorType, VisionProcessorBase> processor_map = new HashMap<ProcessorType, VisionProcessorBase>();
+	private HashMap<ProcessorType, VisionProcessorBase> processor_map = new HashMap<>();
 	private ProcessorType processor = null;
 
 	public VisionProcessorBase getProcessor(){

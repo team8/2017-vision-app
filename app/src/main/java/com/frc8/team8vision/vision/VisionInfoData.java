@@ -17,14 +17,14 @@ import java.util.HashMap;
  */
 public class VisionInfoData {
 
-	private static VisionData<Double> x_dist = new VisionDataSynchronized<>("x_dist", Double.NaN, null,
+	private static VisionData<Double> x_dist = new VisionDataSynchronized<>("x_dist", Double.NaN, Double.NaN,
 			new DataExistsCallback<Double>() {
 				@Override
 				public boolean doesExist(Double data) {
 					return !(data == null || data.isNaN() || data.isInfinite());
 				}
 			});
-	private static VisionData<Double> z_dist = new VisionDataSynchronized<>("z_dist", Double.NaN, null,
+	private static VisionData<Double> z_dist = new VisionDataSynchronized<>("z_dist", Double.NaN, Double.NaN,
 			new DataExistsCallback<Double>() {
 				@Override
 				public boolean doesExist(Double data) {
@@ -72,8 +72,8 @@ public class VisionInfoData {
 		JSONObject json = new JSONObject();
 		try {
 			json.put("state", "STREAMING");
-			json.put("x_displacement", VisionInfoData.getXDist());
-			json.put("z_displacement", VisionInfoData.getZDist());
+			json.put("x_displacement", Double.toString(VisionInfoData.getXDist()));
+			json.put("z_displacement", Double.toString(VisionInfoData.getZDist()));
 			return json;
 		} catch (JSONException e) {
 			e.printStackTrace();

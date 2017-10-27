@@ -1,10 +1,16 @@
 package com.frc8.team8vision.networking;
 
 import android.app.Activity;
+import android.provider.Settings;
+import android.provider.SyncStateContract;
+import android.util.AtomicFile;
 import android.util.Log;
+
+import com.frc8.team8vision.util.Constants;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
 
 /**
  * Base class for vision servers. Implements {@link AbstractVisionThread}.
@@ -30,6 +36,7 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
     @Override
     @Deprecated
     public void start(Activity activity, final long k_updateRate) {
+
         super.start(null, k_updateRate);
     }
 
@@ -93,7 +100,8 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
         try {
             m_client.close();
         } catch (IOException e) {
-            Log.e(k_tag, "Error closing socket on stop: " + e.getStackTrace().toString());
+            Log.e(k_tag, "Error closing socket on stop: ");
+            e.printStackTrace();
         }
     }
 

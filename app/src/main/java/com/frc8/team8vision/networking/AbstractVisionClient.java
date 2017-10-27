@@ -26,7 +26,7 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
     protected boolean m_testing = false;
     protected int m_port = 0;
     protected String m_hostName = "";
-    protected Socket m_client = new Socket();
+    protected Socket m_client;
     protected SocketState m_socketState = SocketState.PRE_INIT;
 
     protected AbstractVisionClient(final String k_threadName) {

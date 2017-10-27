@@ -40,6 +40,7 @@ public class VideoSocketClient extends AbstractVisionClient {
 				// Initialize data streams
 				OutputStream out = m_client.getOutputStream();
 				DataOutputStream dos = new DataOutputStream(out);
+				Log.i(k_tag, m_client.getRemoteSocketAddress().toString());
 
 				try {
 

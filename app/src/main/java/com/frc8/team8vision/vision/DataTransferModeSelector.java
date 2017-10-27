@@ -77,7 +77,7 @@ public class DataTransferModeSelector {
             json.pause();
 
             VideoSocketClient socket = new VideoSocketClient();
-            socket.start(activity, Constants.kDataUpdateRateMS, Constants.kRIOHostName, Constants.kVideoPort, isTesting);
+            socket.start(activity, Constants.kVisionUpdateRateMS, Constants.kRIOHostName, Constants.kVideoPort, isTesting);
             socket.pause();
 
             transferers.put(DataTransferMode.CAT_JSON, json  );

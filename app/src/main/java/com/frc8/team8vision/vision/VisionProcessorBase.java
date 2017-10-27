@@ -34,16 +34,16 @@ public abstract class VisionProcessorBase {
 		IDX_OUT_XDIST = 2,
 		IDX_OUT_ZDIST = 3;
 
-	protected VisionData[] output_data;
+	protected VisionDataUnit[] output_data;
 
 	public VisionProcessorBase() {
 
-		output_data = new VisionData[OUT_DIM];
+		output_data = new VisionDataUnit[OUT_DIM];
 
-		output_data[IDX_OUT_FUNCTION_EXECUTION_CODE] = new VisionData<>(0, 1, new DataExistsCallback<Integer>(){});
-		output_data[IDX_OUT_EXECUTION_MESSAGE] = new VisionData<>("Safe execution", null, new DataExistsCallback<String>(){});
-		output_data[IDX_OUT_XDIST] = new VisionData<>(Double.NaN, Double.NaN, new DoubleExistsCallback());
-		output_data[IDX_OUT_ZDIST] = new VisionData<>(Double.NaN, Double.NaN, new DoubleExistsCallback());
+		output_data[IDX_OUT_FUNCTION_EXECUTION_CODE] = new VisionDataUnit<>(0, 1, new DataExistsCallback<Integer>(){});
+		output_data[IDX_OUT_EXECUTION_MESSAGE] = new VisionDataUnit<>("Safe execution", null, new DataExistsCallback<String>(){});
+		output_data[IDX_OUT_XDIST] = new VisionDataUnit<>(Double.NaN, Double.NaN, new DoubleExistsCallback());
+		output_data[IDX_OUT_ZDIST] = new VisionDataUnit<>(Double.NaN, Double.NaN, new DoubleExistsCallback());
 	}
 
 	/**
@@ -53,7 +53,7 @@ public abstract class VisionProcessorBase {
 	 * @param mask A filtered image of ones and zeros.
 	 * @return Vision data.
 	 */
-	public VisionData[] process(Mat input, Mat mask) {
+	public VisionDataUnit[] process(Mat input, Mat mask) {
 
 		// Find contours that represent tape on the peg
 		ArrayList<MatOfPoint> contours = new ArrayList<>();
@@ -72,7 +72,7 @@ public abstract class VisionProcessorBase {
 	 * @param input The raw video image from the camera.
 	 * @return Vision data.
 	 */
-	public abstract VisionData[] processContours(MatOfPoint[] corners, Mat input);
+	public abstract VisionDataUnit[] processContours(MatOfPoint[] corners, Mat input);
 
 	/**
 	 * Get best contours to process from a list.

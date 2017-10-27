@@ -4,15 +4,11 @@ import com.frc8.team8vision.util.AutoCloseableLock;
 import com.frc8.team8vision.util.DataExistsCallback;
 import com.frc8.team8vision.util.ReadWriteLock;
 
-/**
- * Created by Alvin on 9/10/2017.
- */
-
-public class VisionDataSynchronized<T> extends VisionData<T>{
+public class VisionDataUnitSynchronized<T> extends VisionDataUnit<T> {
 
 	private ReadWriteLock mLock;
 
-	public VisionDataSynchronized(String name, T value, T default_value, DataExistsCallback<T> existsCallback) {
+	public VisionDataUnitSynchronized(String name, T value, T default_value, DataExistsCallback<T> existsCallback) {
 		super(value, default_value, existsCallback);
 		mLock = new ReadWriteLock(name);
 	}
@@ -26,7 +22,7 @@ public class VisionDataSynchronized<T> extends VisionData<T>{
 		}
 	}
 	@Override
-	public void set(VisionData<T> v_data) {
+	public void set(VisionDataUnit<T> v_data) {
 		try (AutoCloseableLock lock = new AutoCloseableLock(mLock, ReadWriteLock.WRITING)){
 			super.set(v_data);
 		} catch (Exception e){

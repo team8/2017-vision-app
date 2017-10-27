@@ -1,16 +1,11 @@
 package com.frc8.team8vision.networking;
 
 import android.app.Activity;
-import android.provider.Settings;
-import android.provider.SyncStateContract;
-import android.util.AtomicFile;
 import android.util.Log;
-
-import com.frc8.team8vision.util.Constants;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Arrays;
+import java.net.UnknownHostException;
 
 /**
  * Base class for vision servers. Implements {@link AbstractVisionThread}.
@@ -113,10 +108,21 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
     protected SocketState attemptConnection() {
 
         try {
+
             // Attempt to connect to server
+            Log.i(k_tag, "Trying to reconnect to: " + m_hostName + " using port: " + Integer.toString(m_port));
             m_client = new Socket(m_hostName, m_port);
+            Log.i(k_tag, "Connected to: " + m_hostName + " using port: " + Integer.toString(m_port));
             return SocketState.OPEN;
+
+        } catch (UnknownHostException ue) {
+
+            Log.e(k_tag, "Unknown host: " + m_hostName + "!");
+            ue.printStackTrace();
+            return SocketState.ATTEMPTING_CONNECTION;
+
         } catch (IOException e) {
+
             return SocketState.ATTEMPTING_CONNECTION;
         }
     }
@@ -128,11 +134,11 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
      */
     protected SocketState checkConnection() {
 
-        final boolean connected = m_client.isConnected();
+        final boolean connectedAndOpen = !m_client.isConnected() || m_client.isClosed();
 
-        if (!connected) Log.e(k_tag, "Lost connection to socket.");
+        if (!connectedAndOpen) Log.e(k_tag, "Lost connection to socket.");
 
-        return connected ? SocketState.OPEN : SocketState.ATTEMPTING_CONNECTION;
+        return connectedAndOpen ? SocketState.OPEN : SocketState.ATTEMPTING_CONNECTION;
     }
 
     @Override

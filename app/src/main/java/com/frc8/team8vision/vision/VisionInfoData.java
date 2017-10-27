@@ -8,8 +8,6 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 
-import java.util.HashMap;
-
 /**
  * Contains various vision info data to be referenced in a static context
  *
@@ -17,21 +15,21 @@ import java.util.HashMap;
  */
 public class VisionInfoData {
 
-	private static VisionData<Double> x_dist = new VisionDataSynchronized<>("x_dist", Double.NaN, Double.NaN,
+	private static VisionDataUnit<Double> x_dist = new VisionDataUnitSynchronized<>("x_dist", Double.NaN, Double.NaN,
 			new DataExistsCallback<Double>() {
 				@Override
 				public boolean doesExist(Double data) {
 					return !(data == null || data.isNaN() || data.isInfinite());
 				}
 			});
-	private static VisionData<Double> z_dist = new VisionDataSynchronized<>("z_dist", Double.NaN, Double.NaN,
+	private static VisionDataUnit<Double> z_dist = new VisionDataUnitSynchronized<>("z_dist", Double.NaN, Double.NaN,
 			new DataExistsCallback<Double>() {
 				@Override
 				public boolean doesExist(Double data) {
 					return !(data == null || data.isNaN() || data.isInfinite());
 				}
 			});
-	private static VisionData<Mat> imageMat = new VisionDataSynchronized<>("frame", null, null,
+	private static VisionDataUnit<Mat> imageMat = new VisionDataUnitSynchronized<>("frame", null, null,
 			new DataExistsCallback<Mat>() {
 				@Override
 				public boolean doesExist(Mat data) {
@@ -39,10 +37,10 @@ public class VisionInfoData {
 				}
 			});
 
-	public static void setXDist(VisionData<Double> x_value) {
+	public static void setXDist(VisionDataUnit<Double> x_value) {
 		x_dist.set(x_value);
 	}
-	public static void setZDist(VisionData<Double> z_value) {
+	public static void setZDist(VisionDataUnit<Double> z_value) {
 		z_dist.set(z_value);
 	}
 	public static void setFrame(Mat image) {

@@ -2,7 +2,6 @@ package com.frc8.team8vision.util;
 
 import com.frc8.team8vision.R;
 
-import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
 
 /**

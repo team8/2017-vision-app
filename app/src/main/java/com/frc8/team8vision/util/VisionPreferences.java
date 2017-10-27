@@ -7,11 +7,8 @@ import android.preference.PreferenceManager;
 
 import com.frc8.team8vision.vision.ProcessorSelector;
 
-/**
- * Created by Alvin on 9/16/2017.
- */
-
 public class VisionPreferences {
+
 	private static SharedPreferences preferences = null;
 	private static Context context = null;
 

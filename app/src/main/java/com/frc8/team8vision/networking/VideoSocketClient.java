@@ -40,7 +40,8 @@ public class VideoSocketClient extends AbstractVisionClient {
 				// Initialize data streams
 				OutputStream out = m_client.getOutputStream();
 				DataOutputStream dos = new DataOutputStream(out);
-				Log.i(k_tag, m_client.getRemoteSocketAddress().toString());
+
+				//Log.i(k_tag, m_client.getRemoteSocketAddress().toString());
 
 				try {
 
@@ -49,13 +50,15 @@ public class VideoSocketClient extends AbstractVisionClient {
 
 				} catch (IOException e) {
 
-					Log.e(k_tag, "Error writing to socket stream!");
+					Log.e(k_tag, "Error writing to socket stream! Closing socket...");
 					e.printStackTrace();
+
+					closeSocket();
 				}
 
 			} catch (IOException e) {
 
-				Log.e(k_tag, "Cannot get output stream of socket!");
+				Log.e(k_tag, "Cannot get output stream of socket with address: " + m_hostName + " using port: " + Integer.toString(m_port) + "! Closing socket...");
 				e.printStackTrace();
 
 				closeSocket();
@@ -73,6 +76,7 @@ public class VideoSocketClient extends AbstractVisionClient {
 				switch (m_socketState) {
 
 					case OPEN: {
+
 						writeFrameToSocket();
 						break;
 					}

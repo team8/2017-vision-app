@@ -4,9 +4,6 @@ import com.frc8.team8vision.vision.processors.CentroidProcessor;
 import com.frc8.team8vision.vision.processors.DoubleTargetProcessor;
 import com.frc8.team8vision.vision.processors.SingleTargetProcessor;
 
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfDouble;
-
 import java.util.HashMap;
 
 /**

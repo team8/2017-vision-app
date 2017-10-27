@@ -11,17 +11,15 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
-import com.frc8.team8vision.networking.VideoSocketClient;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.R;
-import com.frc8.team8vision.networking.JSONVisionDataThread;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.DataTransferModeSelector;
 import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
 import com.frc8.team8vision.vision.ProcessorSelector.ProcessorType;
-import com.frc8.team8vision.vision.VisionData;
+import com.frc8.team8vision.vision.VisionDataUnit;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -268,15 +266,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 			return mask;
 		}
 
-		VisionData[] out_data = visionProcessor.getProcessor().process(input, mask);
+		VisionDataUnit[] out_data = visionProcessor.getProcessor().process(input, mask);
 		if((Integer)out_data[VisionProcessorBase.IDX_OUT_FUNCTION_EXECUTION_CODE].get()
 			!= VisionProcessorBase.EXECUTION_CODE_OKAY){
 			Log.e(TAG, "track Error:\n\t" +
 					out_data[VisionProcessorBase.IDX_OUT_EXECUTION_MESSAGE].get());
 		}
 
-		VisionData<Double> xDist = out_data[VisionProcessorBase.IDX_OUT_XDIST];
-		VisionData<Double> zDist = out_data[VisionProcessorBase.IDX_OUT_ZDIST];
+		VisionDataUnit<Double> xDist = out_data[VisionProcessorBase.IDX_OUT_XDIST];
+		VisionDataUnit<Double> zDist = out_data[VisionProcessorBase.IDX_OUT_ZDIST];
 
 		VisionInfoData.setXDist(xDist);
 		VisionInfoData.setZDist(zDist);

@@ -5,7 +5,6 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.Comparator;
 
-
 /**
  * @author QuintinDwight
  */

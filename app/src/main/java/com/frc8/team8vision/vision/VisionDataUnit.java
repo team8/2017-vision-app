@@ -3,15 +3,17 @@ package com.frc8.team8vision.vision;
 import com.frc8.team8vision.util.DataExistsCallback;
 
 /**
- * Created by Alvin on 9/8/2017.
+ * Holds a unit of vision data
+ *
+ * @param <T>
  */
+public class VisionDataUnit<T> {
 
-public class VisionData<T> {
 	protected T data;
 	protected T default_value;
 	protected DataExistsCallback<T> callback;
 
-	public VisionData(T value, T default_value, DataExistsCallback<T> existsCallback){
+	public VisionDataUnit(T value, T default_value, DataExistsCallback<T> existsCallback){
 		this.data = value;
 		this.default_value = default_value;
 		this.callback = existsCallback;
@@ -20,7 +22,7 @@ public class VisionData<T> {
 	public void set(T value){
 		this.data = value;
 	}
-	public void set(VisionData<T> v_data){
+	public void set(VisionDataUnit<T> v_data){
 		this.data = v_data.get();
 	}
 	public void setDefaultValue(T value){

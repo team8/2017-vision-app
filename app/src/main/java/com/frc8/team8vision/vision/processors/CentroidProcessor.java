@@ -6,7 +6,7 @@ import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.android.CameraInfo;
 import com.frc8.team8vision.util.VisionUtil;
 import com.frc8.team8vision.vision.VisionProcessorBase;
-import com.frc8.team8vision.vision.VisionData;
+import com.frc8.team8vision.vision.VisionDataUnit;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -65,7 +65,7 @@ public class CentroidProcessor extends VisionProcessorBase {
 	}
 
 	@Override
-	public VisionData[] processContours(MatOfPoint[] bestContours, Mat input) {
+	public VisionDataUnit[] processContours(MatOfPoint[] bestContours, Mat input) {
 
 		final boolean trackingLeft = VisionPreferences.isTrackingLeft();
 

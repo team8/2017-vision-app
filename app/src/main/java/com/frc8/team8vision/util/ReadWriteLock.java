@@ -1,13 +1,7 @@
 package com.frc8.team8vision.util;
 
-import android.util.Log;
-
 import java.util.HashMap;
 import java.util.Map;
-
-/**
- * Created by Alvin on 9/10/2017.
- */
 
 public class ReadWriteLock {
 

@@ -5,7 +5,7 @@ import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.util.AreaComparator;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.util.VisionUtil;
-import com.frc8.team8vision.vision.VisionData;
+import com.frc8.team8vision.vision.VisionDataUnit;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 
 import org.opencv.core.Mat;
@@ -62,7 +62,7 @@ public class DoubleTargetProcessor extends VisionProcessorBase {
     }
 
     @Override
-    public VisionData[] processContours(MatOfPoint[] bestContours, Mat input) {
+    public VisionDataUnit[] processContours(MatOfPoint[] bestContours, Mat input) {
 
         if (bestContours != null && bestContours.length == 2) {
 

@@ -1,9 +1,5 @@
 package com.frc8.team8vision.util;
 
-/**
- * Created by Alvin on 9/10/2017.
- */
-
 public class AutoCloseableLock implements AutoCloseable{
 
 	private int closableState = 0;

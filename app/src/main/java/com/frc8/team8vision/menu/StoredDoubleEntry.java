@@ -39,7 +39,7 @@ public class StoredDoubleEntry implements TextWatcher {
 		
 		this.name = profile + "_" + this.title;
 		this.data_value = preferences.getFloat(name, default_value);
-		textEntry.setText("" + this.data_value);
+		textEntry.setText(Double.toString(data_value));
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public class StoredDoubleEntry implements TextWatcher {
 			SharedPreferences.Editor editor = preferences.edit();
 			String text_value = textEntry.getText().toString();
 			data_value = Double.parseDouble(text_value);
-			editor.putFloat(name, (float) data_value);
+			editor.putFloat(name, (float)data_value);
 			editor.apply();
 
 		} catch (NumberFormatException e){

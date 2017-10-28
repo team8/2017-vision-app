@@ -21,7 +21,7 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
     protected boolean m_testing = false;
     protected int m_port = 0;
     protected String m_hostName = "";
-    protected Socket m_client;
+    protected Socket m_client = new Socket();
     protected SocketState m_socketState = SocketState.PRE_INIT;
 
     protected AbstractVisionClient(final String k_threadName) {
@@ -81,11 +81,13 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
         closeSocket();
     }
 
-    @Override
-    protected void onResume() {}
+    @Override protected  void onResume() {}
 
     @Override
-    protected void onPause() {}
+    protected void onPause() {
+
+        closeSocket();
+    }
 
     /**
      * Attempts to close the current socket.
@@ -110,20 +112,20 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
         try {
 
             // Attempt to connect to server
-            //Log.i(k_tag, "Trying to reconnect to: " + m_hostName + " using port: " + Integer.toString(m_port));
+            Log.i(k_tag, "Trying to reconnect to: " + m_hostName + " using port: " + Integer.toString(m_port));
             m_client = new Socket(m_hostName, m_port);
-            //Log.i(k_tag, "Connected to: " + m_hostName + " using port: " + Integer.toString(m_port));
+            Log.i(k_tag, "Connected to: " + m_hostName + " using port: " + Integer.toString(m_port));
             return SocketState.OPEN;
 
         } catch (UnknownHostException ue) {
 
             Log.e(k_tag, "Unknown host: " + m_hostName + "!");
-            //ue.printStackTrace();
+            ue.printStackTrace();
             return SocketState.ATTEMPTING_CONNECTION;
 
         } catch (IOException e) {
 
-            //e.printStackTrace();
+            e.printStackTrace();
             return SocketState.ATTEMPTING_CONNECTION;
         }
     }
@@ -135,10 +137,10 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
      */
     protected SocketState checkConnection() {
 
-        final boolean notConnected = !m_client.isClosed(), closed = m_client.isClosed(), shouldRetry = notConnected || closed;
+        final boolean notConnected = !m_client.isConnected(), closed = m_client.isClosed(), shouldRetry = notConnected || closed;
 
-        if (notConnected) Log.w(k_tag, "Lost connection to port: " + Integer.toString(m_port));
-        if (closed) Log.w(k_tag, "Connection was closed on port: " + Integer.toString(m_port));
+        if (notConnected) Log.w(k_tag, "Lost connection to port: " + Integer.toString(m_client.getPort()));
+        if (closed) Log.w(k_tag, "Connection was closed on port: " + Integer.toString(m_client.getPort()));
 
         return shouldRetry ? SocketState.ATTEMPTING_CONNECTION : SocketState.OPEN;
     }

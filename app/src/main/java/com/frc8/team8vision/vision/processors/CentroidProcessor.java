@@ -89,8 +89,6 @@ public class CentroidProcessor extends VisionProcessorBase {
 					: corners[1].x - (Constants.kVisionTargetWidth/2) * ratio,
 				hh = CameraInfo.Height()/2.0, hw = CameraInfo.Width()/2.0;
 
-			Log.i(Constants.kTAG, Float.toString(VisionPreferences.getX_shift()));
-
 			Imgproc.circle(input, new Point(target, hh), 5, new Scalar(0, 0, 255), -1);
 			output_data[IDX_OUT_XDIST].set((target - hw) / ratio + 7.5f);
 

@@ -8,9 +8,7 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.widget.EditText;
 
-/**
- * Created by Alvin on 9/9/2017.
- */
+import com.frc8.team8vision.util.Constants;
 
 public class StoredDoubleEntry implements TextWatcher {
 
@@ -23,6 +21,7 @@ public class StoredDoubleEntry implements TextWatcher {
 	private SharedPreferences preferences;
 
 	public StoredDoubleEntry(int textEntryID, String name, Activity activity){
+
 		this.textEntry = (EditText)activity.findViewById(textEntryID);
 		this.entryID = textEntryID;
 		this.title = name;
@@ -37,24 +36,31 @@ public class StoredDoubleEntry implements TextWatcher {
 	}
 
 	public void initProfiles(String profile, float default_value){
-		this.name = this.title + "_" + profile;
+		
+		this.name = profile + "_" + this.title;
 		this.data_value = preferences.getFloat(name, default_value);
 		textEntry.setText("" + this.data_value);
 	}
 
 	@Override
 	public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
 	@Override
 	public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
 	@Override
 	public void afterTextChanged(Editable s) {
+
 		try {
+
 			SharedPreferences.Editor editor = preferences.edit();
 			String text_value = textEntry.getText().toString();
 			data_value = Double.parseDouble(text_value);
 			editor.putFloat(name, (float) data_value);
 			editor.apply();
+
 		} catch (NumberFormatException e){
+
 			Log.d("FRC8.StoredDoubleEntry", "Invalid " + name + " value");
 		}
 	}

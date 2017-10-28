@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import com.frc8.team8vision.vision.ProcessorSelector;
 
@@ -29,6 +30,7 @@ public class VisionPreferences {
 	}
 
 	public static void updateSettings(){
+
 		profile = preferences.getString(Constants.kProfileNameSettingsName, profile);
 		trackingLeft = preferences.getBoolean(profile+"_"+Constants.kTrackingLeftSettingsName, trackingLeft);
 		dynamicTracking = preferences.getBoolean(profile+"_"+Constants.kDynamicTrackingSettingsName, dynamicTracking);

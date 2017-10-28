@@ -110,20 +110,20 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
         try {
 
             // Attempt to connect to server
-            Log.i(k_tag, "Trying to reconnect to: " + m_hostName + " using port: " + Integer.toString(m_port));
+            //Log.i(k_tag, "Trying to reconnect to: " + m_hostName + " using port: " + Integer.toString(m_port));
             m_client = new Socket(m_hostName, m_port);
-            Log.i(k_tag, "Connected to: " + m_hostName + " using port: " + Integer.toString(m_port));
+            //Log.i(k_tag, "Connected to: " + m_hostName + " using port: " + Integer.toString(m_port));
             return SocketState.OPEN;
 
         } catch (UnknownHostException ue) {
 
             Log.e(k_tag, "Unknown host: " + m_hostName + "!");
-            ue.printStackTrace();
+            //ue.printStackTrace();
             return SocketState.ATTEMPTING_CONNECTION;
 
         } catch (IOException e) {
 
-            e.printStackTrace();
+            //e.printStackTrace();
             return SocketState.ATTEMPTING_CONNECTION;
         }
     }

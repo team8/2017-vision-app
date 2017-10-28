@@ -123,6 +123,7 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
 
         } catch (IOException e) {
 
+            e.printStackTrace();
             return SocketState.ATTEMPTING_CONNECTION;
         }
     }
@@ -134,11 +135,12 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
      */
     protected SocketState checkConnection() {
 
-        final boolean connectedAndOpen = !m_client.isConnected() || m_client.isClosed();
+        final boolean notConnected = !m_client.isClosed(), closed = m_client.isClosed(), shouldRetry = notConnected || closed;
 
-        if (!connectedAndOpen) Log.e(k_tag, "Lost connection to socket.");
+        if (notConnected) Log.w(k_tag, "Lost connection to port: " + Integer.toString(m_port));
+        if (closed) Log.w(k_tag, "Connection was closed on port: " + Integer.toString(m_port));
 
-        return connectedAndOpen ? SocketState.OPEN : SocketState.ATTEMPTING_CONNECTION;
+        return shouldRetry ? SocketState.ATTEMPTING_CONNECTION : SocketState.OPEN;
     }
 
     @Override

@@ -76,7 +76,7 @@ public class CentroidProcessor extends VisionProcessorBase {
 			final Point[] corners = VisionUtil.getCorners(bestContours[0], 0);
 
 			final Point3 posePnP = getPosePnP(trackingLeft ? kLeftTargetMatrix : kRightTargetMatrix, corners, input);
-			output_data[IDX_OUT_ZDIST].set(posePnP.z - 15.0f);
+			output_data[IDX_OUT_ZDIST].set(posePnP.z - VisionPreferences.getZ_shift());
 
 			// Draw corners on image
 			for (int i = 0; i < corners.length; i++)
@@ -90,7 +90,7 @@ public class CentroidProcessor extends VisionProcessorBase {
 				hh = CameraInfo.Height()/2.0, hw = CameraInfo.Width()/2.0;
 
 			Imgproc.circle(input, new Point(target, hh), 5, new Scalar(0, 0, 255), -1);
-			output_data[IDX_OUT_XDIST].set((target - hw) / ratio + 7.5f);
+			output_data[IDX_OUT_XDIST].set((target - hw) / ratio + VisionPreferences.getX_shift());
 
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();

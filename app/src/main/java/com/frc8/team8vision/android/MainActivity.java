@@ -224,7 +224,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		Mat imageRGB = inputFrame.rgba();
 		if (!isGalaxy()) Core.flip(imageRGB, imageRGB, -1); // Necessary because Nexus camera feed is inverted
 		imageRGB = track(imageRGB);
-		VisionInfoData.setFrame(imageRGB.clone());
+		Mat imageToPass = imageRGB.clone();
+		if(imageRGB.channels() == 4){
+			Imgproc.cvtColor(imageRGB, imageToPass, Imgproc.COLOR_BGRA2RGBA);
+		}
+
+		VisionInfoData.setFrame(imageToPass);
 
 		// The returned image will be displayed on screen
 		return imageRGB;

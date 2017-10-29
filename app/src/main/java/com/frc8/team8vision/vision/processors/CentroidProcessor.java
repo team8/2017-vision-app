@@ -15,6 +15,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
@@ -45,22 +46,39 @@ public class CentroidProcessor extends VisionProcessorBase {
 			// Check if the first (biggest) contour is the left one
 			final boolean firstIsLeft = contours.get(0).toArray()[0].x < contours.get(1).toArray()[0].x;
 			// Find left and right contours
-			MatOfPoint
-				left  = firstIsLeft ? contours.get(0) : contours.get(1),
-				right = firstIsLeft ? contours.get(1) : contours.get(0);
+			final MatOfPoint
+					left  = firstIsLeft ? contours.get(0) : contours.get(1),
+					right = firstIsLeft ? contours.get(1) : contours.get(0);
+//
+//			Log.i(Constants.kTAG, Double.toString(ratio));
+//
+//			if (ratio > 0.75f)
+//				return null;
 
-			final boolean leftIsBigger = Imgproc.contourArea(left) > Imgproc.contourArea(right);
+			final double leftArea = Imgproc.contourArea(left), rightArea = Imgproc.contourArea(right);
+			final boolean leftIsBigger = leftArea > rightArea;
 			if (dynamicTracking)
 				VisionPreferences.setTrackingLeft(leftIsBigger);
 
+			final double
+					primaryArea = Imgproc.contourArea(VisionPreferences.isTrackingLeft() ? right : left),
+					secondaryArea = Imgproc.contourArea(VisionPreferences.isTrackingLeft() ? left : right);
+
+			//final double smallOverLargeRatio = Imgproc.contourArea(contours.get(1)) / Imgproc.contourArea(contours.get(0));
+
+			MatOfPoint finalContour;
+
 			// Find the final contour based on which target we are aiming for
-			final MatOfPoint finalContour = VisionPreferences.isTrackingLeft() ? left : right;
+			if (secondaryArea / primaryArea > 0.75f) {
+				finalContour = VisionPreferences.isTrackingLeft() ? left : right;
+			} else {
+				finalContour = VisionPreferences.isTrackingLeft() ? right : left;
+			}
 
 			// Draw tape contours on screen
 			Imgproc.drawContours(input, contours, 0, new Scalar(255, 0, 0));
 			Imgproc.drawContours(input, contours, 1, new Scalar(0, 255, 0));
 
-			// Return first two contours which should be the biggest
 			return new MatOfPoint[] { finalContour };
 		}
 		return null;

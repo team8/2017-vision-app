@@ -60,16 +60,22 @@ public class CentroidProcessor extends VisionProcessorBase {
 			if (dynamicTracking)
 				VisionPreferences.setTrackingLeft(leftIsBigger);
 
-			final double
-					primaryArea = Imgproc.contourArea(VisionPreferences.isTrackingLeft() ? right : left),
-					secondaryArea = Imgproc.contourArea(VisionPreferences.isTrackingLeft() ? left : right);
+			final MatOfPoint
+					primaryContour = VisionPreferences.isTrackingLeft() ? left : right,
+					secondaryContour = VisionPreferences.isTrackingLeft() ? right : left;
 
-			//final double smallOverLargeRatio = Imgproc.contourArea(contours.get(1)) / Imgproc.contourArea(contours.get(0));
+			final double
+					secondaryArea = Imgproc.contourArea(primaryContour),
+					primaryArea = Imgproc.contourArea(secondaryContour);
+
+			final Rect primaryBounding = Imgproc.boundingRect(primaryContour), secondaryBounding = Imgproc.boundingRect(secondaryContour);
 
 			MatOfPoint finalContour;
 
 			// Find the final contour based on which target we are aiming for
-			if (secondaryArea / primaryArea > 0.75f) {
+			// Test if ours is really small compared to the other one
+			// Also test if we aren't really high compared to the other one
+			if (primaryArea / secondaryArea > 0.75f && (primaryBounding.width/primaryBounding.height) / (secondaryBounding.width/secondaryBounding.height) > 0.75f) {
 				finalContour = VisionPreferences.isTrackingLeft() ? left : right;
 			} else {
 				finalContour = VisionPreferences.isTrackingLeft() ? right : left;

@@ -204,7 +204,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		// Reduce exposure and turn on flashlight - to be used with reflective tape
 		mCameraView.setParameters();
-		mCameraView.toggleFlashLight(VisionPreferences.isFlashlightOn());
+		mCameraView.setFlashlight(VisionPreferences.isFlashlightOn());
 
 		if (!this.isFocusLocked() || !isSettingsPaused) {
 			visionDataTransferModeSelector.getTransferer().resume();

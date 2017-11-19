@@ -50,16 +50,16 @@ public class VideoSocketClient extends AbstractVisionClient {
 
 				} catch (IOException e) {
 
-					Log.e(k_tag, "Error writing to socket stream! Closing socket...");
-					e.printStackTrace();
+					//Log.e(k_tag, "Error writing to socket stream! Closing socket...");
+					//e.printStackTrace();
 
 					closeSocket();
 				}
 
 			} catch (IOException e) {
 
-				Log.e(k_tag, "Cannot get output stream of socket with address: " + m_hostName + " using port: " + Integer.toString(m_port) + "! Closing socket...");
-				e.printStackTrace();
+				//Log.e(k_tag, "Cannot get output stream of socket with address: " + m_hostName + " using port: " + Integer.toString(m_port) + "! Closing socket...");
+				//e.printStackTrace();
 
 				closeSocket();
 			}

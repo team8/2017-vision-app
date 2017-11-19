@@ -98,7 +98,7 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
             m_client.close();
         } catch (IOException e) {
             Log.e(k_tag, "Error closing socket on stop: ");
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
@@ -120,12 +120,12 @@ public abstract class AbstractVisionClient extends AbstractVisionThread {
         } catch (UnknownHostException ue) {
 
             Log.e(k_tag, "Unknown host: " + m_hostName + "!");
-            ue.printStackTrace();
+            //ue.printStackTrace();
             return SocketState.ATTEMPTING_CONNECTION;
 
         } catch (IOException e) {
 
-            e.printStackTrace();
+            //e.printStackTrace();
             return SocketState.ATTEMPTING_CONNECTION;
         }
     }

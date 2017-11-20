@@ -11,8 +11,6 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 
-import com.frc8.team8vision.android.SettingsActivity;
-import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.util.OnSelectionChangedCallback;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.util.VisionUtil;

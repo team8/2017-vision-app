@@ -10,7 +10,7 @@ import android.widget.Switch;
 
 import com.frc8.team8vision.menu.SelectionDropdown;
 import com.frc8.team8vision.menu.StoredDoubleEntry;
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 import com.frc8.team8vision.menu.HSVSeekBar;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.util.OnSelectionChangedCallback;

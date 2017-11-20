@@ -7,7 +7,7 @@ import com.frc8.team8vision.networking.JSONVideoThread;
 import com.frc8.team8vision.networking.JSONVisionDataThread;
 import com.frc8.team8vision.networking.VideoSocketClient;
 import com.frc8.team8vision.networking.VisionDataSocketClient;
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 
 import java.util.HashMap;
 

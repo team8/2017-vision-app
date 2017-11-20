@@ -11,7 +11,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.DataTransferModeSelector;

@@ -2,7 +2,6 @@ package com.frc8.team8vision.networking;
 
 import android.util.Log;
 
-import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.vision.VisionInfoData;
 
 import java.io.DataOutputStream;

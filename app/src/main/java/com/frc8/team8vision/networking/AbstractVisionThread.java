@@ -1,6 +1,6 @@
 package com.frc8.team8vision.networking;
 
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 
 import android.app.Activity;
 import android.util.Log;

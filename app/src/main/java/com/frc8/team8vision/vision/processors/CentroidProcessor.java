@@ -1,9 +1,7 @@
 package com.frc8.team8vision.vision.processors;
 
-import android.util.Log;
-
 import com.frc8.team8vision.util.AreaComparator;
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.android.CameraInfo;
 import com.frc8.team8vision.util.VisionUtil;
@@ -15,7 +13,6 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
-import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 

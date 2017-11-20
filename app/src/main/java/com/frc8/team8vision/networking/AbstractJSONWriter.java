@@ -3,7 +3,7 @@ package com.frc8.team8vision.networking;
 import android.content.Context;
 import android.util.Log;
 
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;

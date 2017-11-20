@@ -4,8 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
+import com.frc8.team8vision.util.Constants.Constants;
 import com.frc8.team8vision.vision.ProcessorSelector;
 
 public class VisionPreferences {

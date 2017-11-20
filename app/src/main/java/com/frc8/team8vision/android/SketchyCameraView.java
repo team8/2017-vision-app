@@ -9,7 +9,7 @@ import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.core.Core;

@@ -1,19 +1,23 @@
 package com.frc8.team8vision.vision.processors;
 
 import com.frc8.team8vision.android.CameraInfo;
+import com.frc8.team8vision.processing.KalmanFilter;
+import com.frc8.team8vision.util.Constants.KalmanGains;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.util.AreaComparator;
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 import com.frc8.team8vision.util.VisionUtil;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionDataUnit;
 
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
 import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
@@ -24,10 +28,14 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 	private final MatOfPoint3f kLeftTargetMatrix, kRightTargetMatrix;
 	private final int kXPointShift;
 
+	private KalmanFilter mKalmanFilter;
+
 	public SingleTargetProcessor() {
 		kLeftTargetMatrix = new MatOfPoint3f(Constants.kLeftSourcePoints);
 		kRightTargetMatrix = new MatOfPoint3f(Constants.kRightSourcePoints);
 		kXPointShift = CameraInfo.Width()/2;
+
+		mKalmanFilter = new KalmanFilter(new float[]{0.5f, 0.5f, 0.5f}, KalmanGains.kMeasurementNoise, KalmanGains.kProcessNoise);
 	}
 
 	@Override
@@ -77,8 +85,17 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 			final Point[] corners = VisionUtil.getCorners(bestContours[0], kXPointShift);
 
 			final Point3 posePnP = VisionUtil.getPosePnP(isTrackingLeft ? kLeftTargetMatrix : kRightTargetMatrix, corners, input);
-			output_data[IDX_OUT_ZDIST].set(posePnP.z + VisionPreferences.getZ_shift());
-			output_data[IDX_OUT_XDIST].set(posePnP.x + VisionPreferences.getX_shift());
+
+			Mat pnpMat = new Mat(new Size(3,1), CvType.CV_32F);
+			pnpMat.put(0,0,posePnP.x);
+			pnpMat.put(1,0,posePnP.y);
+			pnpMat.put(2,0,posePnP.z);
+
+			mKalmanFilter.update(pnpMat);
+			Point3 filteredPose = mKalmanFilter.getState();
+
+			output_data[IDX_OUT_ZDIST].set(filteredPose.z + VisionPreferences.getZ_shift());
+			output_data[IDX_OUT_XDIST].set(filteredPose.x + VisionPreferences.getX_shift());
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();
 			output_data[IDX_OUT_ZDIST].setToDefault();

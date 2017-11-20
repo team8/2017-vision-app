@@ -3,7 +3,7 @@ package com.frc8.team8vision.vision.processors;
 import com.frc8.team8vision.android.CameraInfo;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.util.AreaComparator;
-import com.frc8.team8vision.util.Constants;
+import com.frc8.team8vision.util.Constants.Constants;
 import com.frc8.team8vision.util.VisionUtil;
 import com.frc8.team8vision.vision.VisionDataUnit;
 import com.frc8.team8vision.vision.VisionProcessorBase;

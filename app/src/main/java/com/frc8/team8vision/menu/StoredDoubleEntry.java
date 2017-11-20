@@ -8,8 +8,6 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.widget.EditText;
 
-import com.frc8.team8vision.util.Constants;
-
 public class StoredDoubleEntry implements TextWatcher {
 
 	private double data_value = 0;

@@ -1,6 +1,7 @@
 package com.frc8.team8vision.util;
 
 import com.frc8.team8vision.android.CameraInfo;
+import com.frc8.team8vision.util.Constants.Constants;
 
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Mat;

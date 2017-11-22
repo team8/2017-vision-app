@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private DataTransferModeSelector.VisionDataTransferModeSelector visionDataTransferModeSelector;
 	private DataTransferModeSelector.VideoDataTransferModeSelector videoTransferModeSelector;
 
-	private static SketchyCameraView mCameraView;
+	private static NotSketchyCameraView mCameraView;
 	private boolean isSettingsPaused = false;
 
 	private long lastCycleTimestamp = 0;
@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	private void onAllLoaded() {
 
-		mCameraView = new SketchyCameraView(this, -1);
+		mCameraView = new NotSketchyCameraView(this, -1);
 		setContentView(mCameraView);
 		mCameraView.setCvCameraViewListener(this);
 		mCameraView.setMaxFrameSize(1920 / mResolutionFactor, 1080 / mResolutionFactor);

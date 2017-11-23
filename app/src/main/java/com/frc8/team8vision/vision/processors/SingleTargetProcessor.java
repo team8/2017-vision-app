@@ -2,7 +2,7 @@ package com.frc8.team8vision.vision.processors;
 
 import com.frc8.team8vision.android.CameraInfo;
 import com.frc8.team8vision.processing.KalmanFilter;
-import com.frc8.team8vision.util.Constants.KalmanGains;
+import com.frc8.team8vision.util.Constants.KalmanNoise;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.util.AreaComparator;
 import com.frc8.team8vision.util.Constants.Constants;
@@ -35,7 +35,7 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 		kRightTargetMatrix = new MatOfPoint3f(Constants.kRightSourcePoints);
 		kXPointShift = CameraInfo.Width()/2;
 
-		mKalmanFilter = new KalmanFilter(new float[]{0.5f, 0.5f, 0.5f}, KalmanGains.kMeasurementNoise, KalmanGains.kProcessNoise);
+		mKalmanFilter = new KalmanFilter(new float[]{0.5f, 0.5f, 0.5f}, KalmanNoise.kMeasurementNoise, KalmanNoise.kProcessNoise);
 	}
 
 	@Override
@@ -84,14 +84,13 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 			// Get corners for both targets
 			final Point[] corners = VisionUtil.getCorners(bestContours[0], kXPointShift);
 
+			// Draw corners on image
+			for (int i = 0; i < corners.length; i++)
+				Imgproc.circle(input, corners[i], 5, new Scalar((corners.length > 1) ? 255/(corners.length-1) * i : 0, 0, 0), -1);
+
 			final Point3 posePnP = VisionUtil.getPosePnP(isTrackingLeft ? kLeftTargetMatrix : kRightTargetMatrix, corners, input);
 
-			Mat pnpMat = new Mat(new Size(3,1), CvType.CV_32F);
-			pnpMat.put(0,0,posePnP.x);
-			pnpMat.put(1,0,posePnP.y);
-			pnpMat.put(2,0,posePnP.z);
-
-			mKalmanFilter.update(pnpMat);
+			mKalmanFilter.update(posePnP);
 			Point3 filteredPose = mKalmanFilter.getState();
 
 			output_data[IDX_OUT_ZDIST].set(filteredPose.z + VisionPreferences.getZ_shift());

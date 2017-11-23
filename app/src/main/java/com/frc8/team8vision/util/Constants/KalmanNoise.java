@@ -9,7 +9,7 @@ import org.opencv.core.Size;
  * Created by Alvin on 11/20/2017.
  */
 
-public class KalmanGains {
+public class KalmanNoise {
 
 	public static final Mat kMeasurementNoise = createNoise(new Size(3,3), 1);
 	public static final Mat kProcessNoise = createNoise(new Size(3,3), 0.5f);

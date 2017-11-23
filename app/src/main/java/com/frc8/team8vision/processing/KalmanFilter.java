@@ -1,6 +1,9 @@
 package com.frc8.team8vision.processing;
 
+import android.util.Log;
+
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.Point3;
@@ -34,8 +37,9 @@ public class KalmanFilter {
 	private Mat R;
 
 	public KalmanFilter(float[] predictionCovariance, Mat measurementNoise, Mat processNoise){
-		F = Mat.eye(new Size(3,3), F.type());
-		H = Mat.eye(new Size(3,3), H.type());
+		F = Mat.eye(new Size(3,3), CvType.CV_32F);
+		H = Mat.eye(new Size(3,3), CvType.CV_32F);
+		K = new Mat(new Size(3,3), CvType.CV_32F);
 
 		X = initializeVector(0, 0, 0);
 		P = initializeCovarianceMat(predictionCovariance);
@@ -44,30 +48,38 @@ public class KalmanFilter {
 		R = measurementNoise;
 	}
 
-	public void update(Mat sensorUpdate){
-		X =  F.mul(X);
+	public void update(Point3 sensorUpdate){
+		Mat Z = initializeVector((float)sensorUpdate.x, (float)sensorUpdate.y, (float)sensorUpdate.z);
+
+//		X =  F.mul(X);
+		Core.multiply(F, X, X);
 		Core.add(F.mul(P).mul(F.t()), Q, P);
 
-		Mat temp = new Mat();
+		Mat temp = new Mat(new Size(3,3), CvType.CV_32F);
 		Core.add(H.mul(P).mul(H.t()), R, temp);
-		K = P.mul(H.t().mul(temp.inv()));
+//		K = P.mul(H.t().mul(temp.inv()));
+		Core.multiply(P, H.t().mul(temp.inv()), K);
 
-		Core.subtract(sensorUpdate, H.mul(X), temp);
+		temp = new Mat(new Size(3,1), CvType.CV_32F);
+		Core.subtract(Z, H.mul(X), temp);
+		Core.multiply(K, temp, temp);
 		Core.add(X, temp, X);
 		Core.subtract(P, K.mul(H).mul(P), P);
+
+		Log.d("______KALMAN__________", String.valueOf(X));
 	}
 
 	private Mat initializeVector(float x, float y, float z){
-		Mat temp = Mat.zeros(new Size(1, 3), X.type());
+		Mat temp = Mat.zeros(new Size(3, 1), CvType.CV_32F);
 		temp.put(0,0, x);
-		temp.put(0,1, y);
-		temp.put(0,2, z);
+		temp.put(1,0, y);
+		temp.put(2,0, z);
 		return temp;
 	}
 
 	private Mat initializeCovarianceMat(float[] standardDevs){
 		float x = standardDevs[0], y = standardDevs[1], z = standardDevs[2];
-		Mat temp = Mat.zeros(new Size(3,3), P.type());
+		Mat temp = Mat.zeros(new Size(3,3), CvType.CV_32F);
 		temp.put(0,0,x*x);
 		temp.put(1,1,y*y);
 		temp.put(2,2,z*z);

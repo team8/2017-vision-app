@@ -25,7 +25,6 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 
@@ -34,11 +33,11 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
     private static final int MAGIC_TEXTURE_ID = 10;
     private static final String kTAG = Constants.kTAG + "SketchyCameraView";
 
-    private Mat mImageMat;
-    private CameraFrame mFrame;
     protected MainActivity mMainActivity;
     protected CameraManager mCameraManager;
     protected CameraDevice mCameraDevice;
+    protected Mat mYUVFrameMat;
+    protected CameraFrame mFrame;
     private String mCameraId;
     private CameraCaptureSession mCaptureSession;
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
@@ -174,11 +173,21 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
 
             Image image = reader.acquireNextImage();
 
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
+            Image.Plane Y = image.getPlanes()[0];
+            Image.Plane U = image.getPlanes()[1];
+            Image.Plane V = image.getPlanes()[2];
 
-            mImageMat.put(0, 0, bytes);
+            int Yb = Y.getBuffer().remaining();
+            int Ub = U.getBuffer().remaining();
+            int Vb = V.getBuffer().remaining();
+
+            byte[] data = new byte[Yb + Ub + Vb];
+
+            Y.getBuffer().get(data, 0, Yb);
+            U.getBuffer().get(data, Yb, Ub);
+            V.getBuffer().get(data, Yb + Ub, Vb);
+
+            mYUVFrameMat.put(0, 0, data);
 
             deliverAndDrawFrame(mFrame);
 
@@ -241,7 +250,7 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
 //
 //                                mPreviewSize = new Size((int)frameSize.width, (int)frameSize.height);
 
-                                mPreviewSize = new Size(1080, 1920);
+                                mPreviewSize = new Size(width, height);
 
                                 Log.i(kTAG, mPreviewSize.toString());
 
@@ -260,12 +269,20 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
 
                             mSurfaceTexture = new SurfaceTexture(MAGIC_TEXTURE_ID);
 
-                            mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.YUV_420_888, 1);
+                            mFrameHeight = mPreviewSize.getHeight();
+                            mFrameWidth  = mPreviewSize.getWidth ();
+
+                            //mScale = Math.min((float)height/mFrameHeight, (float)width/mFrameWidth);
+                            mScale = 1.0f;
+
+                            mYUVFrameMat = new Mat(mFrameHeight + mFrameHeight/2, mFrameWidth, CvType.CV_8UC1);
+
+                            mFrame = new CameraFrame(mYUVFrameMat, mFrameWidth, mFrameHeight);
+
+                            mImageReader = ImageReader.newInstance(mFrameWidth, mFrameHeight, ImageFormat.YUV_420_888, 1);
                             mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
 
-                            mImageMat = new Mat(mPreviewSize.getHeight(), mPreviewSize.getWidth(), CvType.CV_8UC1);
-
-                            mFrame = new CameraFrame(mImageMat, mPreviewSize.getWidth(), mPreviewSize.getHeight());
+                            AllocateCache();
 
                             mCameraManager.openCamera(id, mStateCallback, mBackgroundHandler);
                         }
@@ -277,23 +294,11 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-
-        if (requestCode == 1) {
-            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Log.e(kTAG, "Could not get permission for camera!");
-            }
-        } else {
-            mMainActivity.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }
-
     private void createCameraPreviewSession() {
 
         try {
 
-            mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            mSurfaceTexture.setDefaultBufferSize(mFrameWidth, mFrameHeight);
 
             final Surface surface = new Surface(mSurfaceTexture), imageReaderSurface = mImageReader.getSurface();
 
@@ -347,6 +352,18 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
             new CameraPermissionConfirmationDialog().show(mMainActivity.getFragmentManager(), "dialog");
         } else {
             mMainActivity.requestPermissions(new String[] {Manifest.permission.CAMERA}, 1);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if (requestCode == 1) {
+            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Log.e(kTAG, "Could not get permission for camera!");
+            }
+        } else {
+            mMainActivity.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
@@ -422,43 +439,26 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
     private class CameraFrame implements CvCameraViewFrame {
 
         private Mat mYuvFrameData, mRgba;
-        private int mWidth, mHeight;
-        private Mat mRotated;
 
         @Override
         public Mat gray() {
 
-            if (mRotated != null) mRotated.release();
-            mRotated = mYuvFrameData.submat(0, mWidth, 0, mHeight); //submat with reversed width and height because its done on the landscape frame
-            mRotated = mRotated.t();
-            Core.flip(mRotated, mRotated, 1);
-            return mRotated;
+            return null;
         }
 
         @Override
         public Mat rgba() {
 
-            Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2BGR_NV12, 4);
-            if (mRotated != null) mRotated.release();
-            mRotated = mRgba.t();
-            Core.flip(mRotated, mRotated, 1);
-            return mRotated;
+            Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGBA_I420, 4);
+            return mRgba;
         }
 
         public CameraFrame(Mat Yuv420sp, int width, int height) {
 
             super();
 
-            mWidth = width;
-            mHeight = height;
             mYuvFrameData = Yuv420sp;
             mRgba = new Mat();
-        }
-
-        public void release() {
-
-            mRgba.release();
-            if (mRotated != null) mRotated.release();
         }
     }
 

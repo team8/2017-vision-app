@@ -13,6 +13,8 @@ public class CameraInfo {
 	private static Mat intrinsicMatrix;
 	private static MatOfDouble distCoeffs;
 
+	private static long cycleTime = 0;
+
 	public static void setInfo(int height, int width, Mat intrinsics, MatOfDouble distortion){
 		mHeight = height;
 		mWidth = width;
@@ -27,8 +29,12 @@ public class CameraInfo {
 	public static void setIntrinsics(Mat intrinsics){
 		intrinsicMatrix = intrinsics;
 	}
-	public static void setDistortion(MatOfDouble distortion){
+	public static void setDistortion(MatOfDouble distortion)
+	{
 		distCoeffs = distortion;
+	}
+	public static void updateCycleTime(long time) {
+		cycleTime = time;
 	}
 
 	public static int Height(){
@@ -43,4 +49,8 @@ public class CameraInfo {
 	public static MatOfDouble DistortionCoefficients(){
 		return distCoeffs;
 	}
+	public static long getCycleTime() {
+		return cycleTime;
+	}
+
 }

@@ -35,7 +35,7 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 		kRightTargetMatrix = new MatOfPoint3f(Constants.kRightSourcePoints);
 		kXPointShift = CameraInfo.Width()/2;
 
-		mKalmanFilter = new KalmanFilter(new float[]{0.5f, 0.5f, 0.5f}, KalmanNoise.kMeasurementNoise, KalmanNoise.kProcessNoise);
+		mKalmanFilter = new KalmanFilter(new float[]{1f, 1f, 1f}, KalmanNoise.kMeasurementNoise, KalmanNoise.kProcessNoise);
 	}
 
 	@Override

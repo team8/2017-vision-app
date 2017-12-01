@@ -45,8 +45,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	private static final String TAG = Constants.kTAG+"MainActivity";
 
-	private static long cycleTime = 1000;
-
 	private ProcessorSelector visionProcessor;
 	private DataTransferModeSelector.VisionDataTransferModeSelector visionDataTransferModeSelector;
 	private DataTransferModeSelector.VideoDataTransferModeSelector videoTransferModeSelector;
@@ -250,7 +248,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	 */
 	public Mat track(Mat input) {
 		// Calculates time between method calls; this shows the amount of lag
-		if (lastCycleTimestamp != 0) cycleTime = System.currentTimeMillis() - lastCycleTimestamp;
+		if (lastCycleTimestamp != 0) {
+			CameraInfo.updateCycleTime(System.currentTimeMillis() - lastCycleTimestamp);
+		}
 		lastCycleTimestamp = System.currentTimeMillis();
 
 		Mat mask = new Mat();
@@ -289,7 +289,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 				(zDist != null ? String.format(Locale.getDefault(), "%.2f", zDist.get()) : "NaN") + ">";
 		Imgproc.putText(input, printval, new Point(0, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
-		Imgproc.putText(input, Double.toString(1000/cycleTime),
+		Imgproc.putText(input, Double.toString(1000/CameraInfo.getCycleTime()),
 				new Point(mWidth - 200 / mResolutionFactor, mHeight - 30),
 				Core.FONT_HERSHEY_SIMPLEX, 2.5 / mResolutionFactor, new Scalar(0, 255, 0), 3);
         return input;

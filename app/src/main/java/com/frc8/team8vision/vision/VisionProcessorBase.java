@@ -28,11 +28,12 @@ public abstract class VisionProcessorBase {
 		EXECUTION_CODE_FAIL = 1;
 
 	public static final int
-		OUT_DIM = 4,
+		OUT_DIM = 5,
 		IDX_OUT_FUNCTION_EXECUTION_CODE = 0,
 		IDX_OUT_EXECUTION_MESSAGE = 1,
 		IDX_OUT_XDIST = 2,
-		IDX_OUT_ZDIST = 3;
+		IDX_OUT_ZDIST = 3,
+		IDX_OUT_YDIST = 4;
 
 	protected VisionDataUnit[] output_data;
 
@@ -44,6 +45,7 @@ public abstract class VisionProcessorBase {
 		output_data[IDX_OUT_EXECUTION_MESSAGE] = new VisionDataUnit<>("Safe execution", null, new DataExistsCallback<String>(){});
 		output_data[IDX_OUT_XDIST] = new VisionDataUnit<>(Double.NaN, Double.NaN, new DoubleExistsCallback());
 		output_data[IDX_OUT_ZDIST] = new VisionDataUnit<>(Double.NaN, Double.NaN, new DoubleExistsCallback());
+		output_data[IDX_OUT_YDIST] = new VisionDataUnit<>(Double.NaN, Double.NaN, new DoubleExistsCallback());
 	}
 
 	/**

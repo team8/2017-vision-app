@@ -29,6 +29,13 @@ public class VisionInfoData {
 					return !(data == null || data.isNaN() || data.isInfinite());
 				}
 			});
+	private static VisionDataUnit<Double> y_dist = new VisionDataUnitSynchronized<>("z_dist", Double.NaN, Double.NaN,
+			new DataExistsCallback<Double>() {
+				@Override
+				public boolean doesExist(Double data) {
+					return !(data == null || data.isNaN() || data.isInfinite());
+				}
+			});
 	private static VisionDataUnit<Mat> imageMat = new VisionDataUnitSynchronized<>("frame", null, null,
 			new DataExistsCallback<Mat>() {
 				@Override
@@ -43,6 +50,9 @@ public class VisionInfoData {
 	public static void setZDist(VisionDataUnit<Double> z_value) {
 		z_dist.set(z_value);
 	}
+	public static void setYDist(VisionDataUnit<Double> y_value) {
+		z_dist.set(y_value);
+	}
 	public static void setFrame(Mat image) {
 		if (image != null) {
 			imageMat.setDefaultValue(image);
@@ -55,6 +65,9 @@ public class VisionInfoData {
 	}
 	public static Double getZDist() {
 		return z_dist.get();
+	}
+	public static Double getYDist() {
+		return y_dist.get();
 	}
 	public static Mat getFrame() {
 		return imageMat.get();

@@ -18,6 +18,8 @@ public class KalmanFilter {
 
 	// Dimension of one input of the state
 	private final int INPUT_DIM = 3;
+	private final int NUM_INPUTS = 1;
+	private final int VEC_LEN = INPUT_DIM * NUM_INPUTS;
 
 	/*
 		X: state matrix
@@ -44,8 +46,8 @@ public class KalmanFilter {
 	private boolean updated = false;
 
 	public KalmanFilter(float[] predictionCovariance, Mat measurementNoise, Mat processNoise){
-		H = Mat.eye(new Size(INPUT_DIM*2,INPUT_DIM*2), CvType.CV_32F);
-		K = new Mat(new Size(INPUT_DIM*2,INPUT_DIM*2), CvType.CV_32F);
+		H = Mat.eye(new Size(VEC_LEN,VEC_LEN), CvType.CV_32F);
+		K = new Mat(new Size(VEC_LEN,VEC_LEN), CvType.CV_32F);
 		F = getStateUpdateMat(CameraInfo.getCycleTime()/1000.f);
 
 		P = initializeCovarianceMat(predictionCovariance);
@@ -56,18 +58,18 @@ public class KalmanFilter {
 
 	public void update(Point3 sensorUpdate){
 		float cycleTime = CameraInfo.getCycleTime()/1000.0f;
-		updateStateUpdatemat(F, cycleTime);
+		updateStateUpdateMat(F, cycleTime);
 
 		if(!updated){
-			Z = initializeVector((float)sensorUpdate.x, (float)sensorUpdate.y, (float)sensorUpdate.z, 0, 0, 0);
+			Z = initializeVector(new float[]{(float)sensorUpdate.x, (float)sensorUpdate.y, (float)sensorUpdate.z, 0, 0, 0});
 			X = Z.clone();
 			updated = true;
 		} else {
-			updateVector(Z, sensorUpdate, cycleTime);
+			updateFromPoint(Z, sensorUpdate);
 		}
 
-		Mat Mtemp = new Mat(new Size(INPUT_DIM*2,INPUT_DIM*2), CvType.CV_32F);
-		Mat Vtemp = new Mat(new Size(1,INPUT_DIM*2), CvType.CV_32F);
+		Mat Mtemp = new Mat(new Size(VEC_LEN,VEC_LEN), CvType.CV_32F);
+		Mat Vtemp = new Mat(new Size(1,VEC_LEN), CvType.CV_32F);
 
 //		X = F*X
 		matMult(F,X,X);
@@ -79,6 +81,7 @@ public class KalmanFilter {
 
 		printMat("H: ",H);
 		printMat("P: ",P);
+
 //		K = P*H'(H*P*H' + R)^-1
 		matMult(H,P,Mtemp);
 		matMult(Mtemp,H.t(),Mtemp);
@@ -105,20 +108,29 @@ public class KalmanFilter {
 		Core.subtract(P,Mtemp,P);
 		matAdd(P,Mtemp,-1,P);
 
-		printVec("Sensor: ",Z);
-		printVec("State: ",X);
+		printMat("Sensor: ",Z);
+		printMat("State: ",X);
 
 	}
 
 	private Mat getStateUpdateMat(float cycleTime) {
-		Mat tempF = Mat.eye(new Size(INPUT_DIM * 2, INPUT_DIM * 2), CvType.CV_32F);
-		updateStateUpdatemat(tempF, cycleTime);
+		Mat tempF = Mat.eye(new Size(VEC_LEN, VEC_LEN), CvType.CV_32F);
+		updateStateUpdateMat(tempF, cycleTime);
 		return tempF;
 	}
 
-	private void updateStateUpdatemat(Mat updateMat, float cycleTime) {
-		for(int i=0; i<INPUT_DIM; i++){
-			updateMat.put(i,i+INPUT_DIM,cycleTime);
+	private void updateStateUpdateMat(Mat updateMat, float cycleTime) {
+		if(NUM_INPUTS<2) return;	// If not at least 2 inputs, skip
+		float[] params = new float[NUM_INPUTS-1];
+		for(int i=1; i>=NUM_INPUTS; i--){
+			params[i-1] = (float)((1.0/i) * Math.pow(cycleTime, i));
+		}
+		for(int i=0; i<INPUT_DIM*(NUM_INPUTS-1); i++){
+			for(int j=1; j<NUM_INPUTS; j++){
+				if(j < NUM_INPUTS -(i%INPUT_DIM)){
+					updateMat.put(i, i+INPUT_DIM*j, params[j-1]);
+				}
+			}
 		}
 	}
 
@@ -132,59 +144,49 @@ public class KalmanFilter {
 		return result;
 	}
 
-	private void printVec(String prefix, Mat m){
-		if(null == m || m.empty()){
-			Log.d("______KALMAN_V________", prefix+"EMPTY MAT");
-		} else {
-			double px = m.get(0,0)[0];
-			double py = m.get(1,0)[0];
-			double pz = m.get(2,0)[0];
-			double vx = m.get(3,0)[0];
-			double vy = m.get(4,0)[0];
-			double vz = m.get(5,0)[0];
-			Log.d("______KALMAN_V________", String.valueOf(prefix+"<"+px+","+py+","+pz+","+vx+","+vy+","+vz+">"));
-		}
-	}
-
 	private void printMat(String prefix, Mat m){
 		if(null == m || m.empty()){
-			Log.d("______KALMAN_M________", prefix+"EMPTY MAT");
+			Log.d("______KALMAN________", prefix+"EMPTY MAT");
 		} else {
-			Log.d("______KALMAN_M________", prefix+"\n"
-					+ "<"+m.get(0,0)[0]+","+m.get(0,1)[0]+","+m.get(0,2)[0]+","+m.get(0,3)[0]+","+m.get(0,4)[0]+","+m.get(0,5)[0]+">"+"\n"
-					+ "<"+m.get(1,0)[0]+","+m.get(1,1)[0]+","+m.get(1,2)[0]+","+m.get(1,3)[0]+","+m.get(1,4)[0]+","+m.get(1,5)[0]+">"+"\n"
-					+ "<"+m.get(2,0)[0]+","+m.get(2,1)[0]+","+m.get(2,2)[0]+","+m.get(2,3)[0]+","+m.get(2,4)[0]+","+m.get(2,5)[0]+">"+"\n"
-					+ "<"+m.get(3,0)[0]+","+m.get(3,1)[0]+","+m.get(3,2)[0]+","+m.get(3,3)[0]+","+m.get(3,4)[0]+","+m.get(3,5)[0]+">"+"\n"
-					+ "<"+m.get(4,0)[0]+","+m.get(4,1)[0]+","+m.get(4,2)[0]+","+m.get(4,3)[0]+","+m.get(4,4)[0]+","+m.get(4,5)[0]+">"+"\n"
-					+ "<"+m.get(5,0)[0]+","+m.get(5,1)[0]+","+m.get(5,2)[0]+","+m.get(5,3)[0]+","+m.get(5,4)[0]+","+m.get(5,5)[0]+">"
-			);
+			StringBuilder out = new StringBuilder(prefix+"\n");
+			for (int i=0; i<m.rows(); i++){
+				out.append("<");
+				for (int j=0; j<m.cols()-1; j++){
+					out.append(m.get(i,j)[0] + ", ");
+				}
+				out.append(m.get(i, m.cols()-1)[0] + ">\n");
+			}
+			Log.d("______KALMAN_________", out.toString());
 		}
 	}
 
-	private Mat initializeVector(float px, float py, float pz, float vx, float vy, float vz){
-		Mat temp = Mat.zeros(new Size(1,INPUT_DIM*2), CvType.CV_32F);
-		temp.put(0,0, px);
-		temp.put(1,0, py);
-		temp.put(2,0, pz);
-		temp.put(3,0, vx);
-		temp.put(4,0, vy);
-		temp.put(5,0, vz);
+	private Mat initializeVector(float[] vec){
+		if(vec.length != VEC_LEN){
+			Log.e("KalmanFilter", "Mismatched vector lengths!");
+			throw new IndexOutOfBoundsException("KalmanFilter: Mismatched vector lengths!");
+		}
+		Mat temp = Mat.zeros(new Size(1,VEC_LEN), CvType.CV_32F);
+		for(int i=0; i<VEC_LEN; i++){
+			temp.put(i,0,vec[i]);
+		}
 		return temp;
 	}
 
-	private Mat updateVector(Mat last_state, Point3 curr_pos, float cycleTime){
-		last_state.put(INPUT_DIM, 0, (curr_pos.x - last_state.get(0,0)[0])/cycleTime);
-		last_state.put(INPUT_DIM+1, 0, (curr_pos.y - last_state.get(1,0)[0])/cycleTime);
-		last_state.put(INPUT_DIM+1, 0, (curr_pos.z - last_state.get(2,0)[0])/cycleTime);
-		return last_state;
+	private void updateFromPoint(Mat last_state, Point3 input){
+		last_state.put(0,0,input.x);
+		last_state.put(1,0,input.x);
+		last_state.put(2,0,input.x);
 	}
 
 	private Mat initializeCovarianceMat(float[] standardDevs){
-		float x = standardDevs[0], y = standardDevs[1], z = standardDevs[2];
-		Mat temp = Mat.zeros(new Size(INPUT_DIM*2,INPUT_DIM*2), CvType.CV_32F);
-		temp.put(0,0,x*x);
-		temp.put(1,1,y*y);
-		temp.put(2,2,z*z);
+		if(standardDevs.length != VEC_LEN){
+			Log.e("KalmanFilter", "Mismatched vector lengths!");
+			throw new IndexOutOfBoundsException("KalmanFilter: Mismatched vector lengths!");
+		}
+		Mat temp = Mat.zeros(new Size(VEC_LEN,VEC_LEN), CvType.CV_32F);
+		for (int i=0; i<VEC_LEN; i++){
+			temp.put(i,i,standardDevs[i]*standardDevs[i]);
+		}
 		return temp;
 	}
 

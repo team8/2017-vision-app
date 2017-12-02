@@ -280,9 +280,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 		VisionDataUnit<Double> xDist = out_data[VisionProcessorBase.IDX_OUT_XDIST];
 		VisionDataUnit<Double> zDist = out_data[VisionProcessorBase.IDX_OUT_ZDIST];
+		VisionDataUnit<Double> yDist = out_data[VisionProcessorBase.IDX_OUT_YDIST];
 
 		VisionInfoData.setXDist(xDist);
 		VisionInfoData.setZDist(zDist);
+		VisionInfoData.setYDist(yDist);
 
 		String printval = "<" +
 				(xDist != null ? String.format(Locale.getDefault(), "%.2f", xDist.get()) : "NaN") + ", " +

@@ -7,6 +7,7 @@ import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.util.AreaComparator;
 import com.frc8.team8vision.util.Constants.Constants;
 import com.frc8.team8vision.util.VisionUtil;
+import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.VisionDataUnit;
 
@@ -90,11 +91,15 @@ public class SingleTargetProcessor extends VisionProcessorBase {
 
 			final Point3 posePnP = VisionUtil.getPosePnP(isTrackingLeft ? kLeftTargetMatrix : kRightTargetMatrix, corners, input);
 
-			mKalmanFilter.update(posePnP);
-			Point3 filteredPose = mKalmanFilter.getState();
+//			mKalmanFilter.update(posePnP);
+//			Point3 filteredPose = mKalmanFilter.getState();
 
-			output_data[IDX_OUT_ZDIST].set(filteredPose.z + VisionPreferences.getZ_shift());
-			output_data[IDX_OUT_XDIST].set(filteredPose.x + VisionPreferences.getX_shift());
+//			output_data[IDX_OUT_ZDIST].set(filteredPose.z + VisionPreferences.getZ_shift());
+//			output_data[IDX_OUT_XDIST].set(filteredPose.x + VisionPreferences.getX_shift());
+
+			output_data[IDX_OUT_ZDIST].set(posePnP.z + VisionPreferences.getZ_shift());
+			output_data[IDX_OUT_XDIST].set(posePnP.x + VisionPreferences.getX_shift());
+			output_data[IDX_OUT_YDIST].set(posePnP.y + 0.0);
 		} else {
 			output_data[IDX_OUT_XDIST].setToDefault();
 			output_data[IDX_OUT_ZDIST].setToDefault();

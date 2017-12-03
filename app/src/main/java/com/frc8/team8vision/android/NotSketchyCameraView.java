@@ -25,6 +25,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 
@@ -36,7 +37,7 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
     protected MainActivity mMainActivity;
     protected CameraManager mCameraManager;
     protected CameraDevice mCameraDevice;
-    protected Mat mYUVFrameMat;
+    protected Mat mYuv420888Mat;
     protected CameraFrame mFrame;
     private String mCameraId;
     private CameraCaptureSession mCaptureSession;
@@ -173,21 +174,26 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
 
             Image image = reader.acquireNextImage();
 
-            Image.Plane Y = image.getPlanes()[0];
-            Image.Plane U = image.getPlanes()[1];
-            Image.Plane V = image.getPlanes()[2];
+            imageToMat(image, mYuv420888Mat);
 
-            int Yb = Y.getBuffer().remaining();
-            int Ub = U.getBuffer().remaining();
-            int Vb = V.getBuffer().remaining();
+//            Image.Plane Y = image.getPlanes()[0];
+//            Image.Plane U = image.getPlanes()[1];
+//            Image.Plane V = image.getPlanes()[2];
 
-            byte[] data = new byte[Yb + Ub + Vb];
+//
+//            int Yb = Y.getBuffer().remaining();
+//            int Ub = U.getBuffer().remaining();
+//            int Vb = V.getBuffer().remaining();
+//
+//            byte[] data = new byte[Yb + Ub + Vb];
+//
+//            Y.getBuffer().get(data, 0, Yb);
+//            U.getBuffer().get(data, Yb, Ub);
+//            V.getBuffer().get(data, Yb + Ub, Vb);
+//
+//            mYuv420888Mat.put(0, 0, data);
 
-            Y.getBuffer().get(data, 0, Yb);
-            U.getBuffer().get(data, Yb, Ub);
-            V.getBuffer().get(data, Yb + Ub, Vb);
-
-            mYUVFrameMat.put(0, 0, data);
+            //Log.i(kTAG, String.format("%d, %d, %d", Yb, Ub, Vb));
 
             deliverAndDrawFrame(mFrame);
 
@@ -250,7 +256,7 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
 //
 //                                mPreviewSize = new Size((int)frameSize.width, (int)frameSize.height);
 
-                                mPreviewSize = new Size(width, height);
+                                mPreviewSize = new Size(480, 640);
 
                                 Log.i(kTAG, mPreviewSize.toString());
 
@@ -273,11 +279,11 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
                             mFrameWidth  = mPreviewSize.getWidth ();
 
                             //mScale = Math.min((float)height/mFrameHeight, (float)width/mFrameWidth);
-                            mScale = 1.0f;
+                            mScale = 2.25f;
 
-                            mYUVFrameMat = new Mat(mFrameHeight + mFrameHeight/2, mFrameWidth, CvType.CV_8UC1);
+                            mYuv420888Mat = new Mat(mFrameHeight + mFrameHeight/2, mFrameWidth, CvType.CV_8UC1);
 
-                            mFrame = new CameraFrame(mYUVFrameMat, mFrameWidth, mFrameHeight);
+                            mFrame = new CameraFrame(mYuv420888Mat, mFrameWidth, mFrameHeight);
 
                             mImageReader = ImageReader.newInstance(mFrameWidth, mFrameHeight, ImageFormat.YUV_420_888, 1);
                             mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
@@ -438,7 +444,7 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
 
     private class CameraFrame implements CvCameraViewFrame {
 
-        private Mat mYuvFrameData, mRgba;
+        private Mat mYuv420888, mBgr, mRgba, mRotated;
 
         @Override
         public Mat gray() {
@@ -449,16 +455,23 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
         @Override
         public Mat rgba() {
 
-            Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGBA_I420, 4);
+            Imgproc.cvtColor(mYuv420888, mBgr, Imgproc.COLOR_YUV2BGR_I420);
+            Imgproc.cvtColor(mBgr, mRgba, Imgproc.COLOR_BGR2RGBA, 0);
+//            if (mRotated != null) mRotated.release();
+//            mRotated = mRgba.t();
+//            Core.flip(mRotated, mRotated, 1);
             return mRgba;
         }
 
-        public CameraFrame(Mat Yuv420sp, int width, int height) {
+        public CameraFrame(final Mat Yuv420888, final int imageWidth, final int imageHeight) {
 
             super();
 
-            mYuvFrameData = Yuv420sp;
+            mYuv420888 = Yuv420888;
+
+            mBgr = new Mat();
             mRgba = new Mat();
+            mRotated = new Mat();
         }
     }
 
@@ -489,4 +502,62 @@ public class NotSketchyCameraView extends CameraBridgeViewBase implements Activi
 //            } while (!mStopThread);
 //        }
 //    }
+
+    /**
+     * Takes an {@link Image} in the YUV_420_888 and puts it into a provided {@link Mat}
+     *
+     * @param image {@link Image} in the YUV_420_888 format.
+     */
+    public static void imageToMat(Image image, Mat mat) {
+
+        ByteBuffer buffer;
+        int rowStride;
+        int pixelStride;
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int offset = 0;
+
+        Image.Plane[] planes = image.getPlanes();
+        byte[] data = new byte[image.getWidth() * image.getHeight() * ImageFormat.getBitsPerPixel(ImageFormat.YUV_420_888) / 8];
+        byte[] rowData = new byte[planes[0].getRowStride()];
+
+        for (int i = 0; i < planes.length; i++) {
+            buffer = planes[i].getBuffer();
+            rowStride = planes[i].getRowStride();
+            pixelStride = planes[i].getPixelStride();
+            int w = (i == 0) ? width : width / 2;
+            int h = (i == 0) ? height : height / 2;
+            for (int row = 0; row < h; row++) {
+                int bytesPerPixel = ImageFormat.getBitsPerPixel(ImageFormat.YUV_420_888) / 8;
+                if (pixelStride == bytesPerPixel) {
+                    int length = w * bytesPerPixel;
+                    buffer.get(data, offset, length);
+
+                    // Advance buffer the remainder of the row stride, unless on the last row.
+                    // Otherwise, this will throw an IllegalArgumentException because the buffer
+                    // doesn't include the last padding.
+                    if (h - row != 1) {
+                        buffer.position(buffer.position() + rowStride - length);
+                    }
+                    offset += length;
+                } else {
+
+                    // On the last row only read the width of the image minus the pixel stride
+                    // plus one. Otherwise, this will throw a BufferUnderflowException because the
+                    // buffer doesn't include the last padding.
+                    if (h - row == 1) {
+                        buffer.get(rowData, 0, width - pixelStride + 1);
+                    } else {
+                        buffer.get(rowData, 0, rowStride);
+                    }
+
+                    for (int col = 0; col < w; col++) {
+                        data[offset++] = rowData[col * pixelStride];
+                    }
+                }
+            }
+        }
+
+        mat.put(0, 0, data);
+    }
 }

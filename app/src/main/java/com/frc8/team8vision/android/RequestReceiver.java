@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.frc8.team8vision.networking.JSONVisionDataThread;
 import com.frc8.team8vision.util.VisionPreferences;
 
 import org.opencv.core.Mat;

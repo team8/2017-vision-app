@@ -16,7 +16,7 @@ import com.frc8.team8vision.R;
 import com.frc8.team8vision.util.OnSelectionChangedCallback;
 import com.frc8.team8vision.util.VisionPreferences;
 import com.frc8.team8vision.vision.ProcessorSelector;
-import com.frc8.team8vision.vision.DataTransferModeSelector;
+import com.frc8.team8vision.networking.data_transfer.DataTransferModeSelector;
 
 import java.util.ArrayList;
 import java.util.Arrays;

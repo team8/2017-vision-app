@@ -1,4 +1,4 @@
-package com.frc8.team8vision.networking;
+package com.frc8.team8vision.networking.data_writers;
 
 
 import com.frc8.team8vision.vision.VisionInfoData;
@@ -12,9 +12,8 @@ import org.json.JSONObject;
  */
 public class JSONVisionDataThread extends AbstractJSONWriter {
 
-    public JSONVisionDataThread() {
-
-        super("JSONVisionDataThread", "data.json");
+    public JSONVisionDataThread(String threadName, String filename) {
+        super(threadName, filename);
     }
 
     @Override
@@ -22,7 +21,6 @@ public class JSONVisionDataThread extends AbstractJSONWriter {
 
     @Override
     protected void onPause() {
-
         writeOnlyStateToJSONFile("PAUSED");
     }
 
@@ -31,14 +29,11 @@ public class JSONVisionDataThread extends AbstractJSONWriter {
 
     @Override
     public void onStop() {
-
         writeOnlyStateToJSONFile("STOPPED");
     }
 
     @Override
     protected JSONObject getJSON() {
-
         return VisionInfoData.getJsonRepresentation();
-
     }
 }

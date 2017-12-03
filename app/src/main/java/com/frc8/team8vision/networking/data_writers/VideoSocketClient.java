@@ -1,8 +1,7 @@
-package com.frc8.team8vision.networking;
+package com.frc8.team8vision.networking.data_writers;
 
 import android.util.Log;
 
-import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.vision.VisionInfoData;
 
 import java.io.DataOutputStream;
@@ -18,9 +17,8 @@ public class VideoSocketClient extends AbstractVisionClient {
 
 	private double m_lastFrameTime = 0;
 
-	public VideoSocketClient() {
-
-		super("VideoSocketClient");
+	public VideoSocketClient(String threadName) {
+		super(threadName);
 	}
 
 	@Override protected void afterInit() {}
@@ -29,13 +27,11 @@ public class VideoSocketClient extends AbstractVisionClient {
 	 * Writes image matrix data to the socket.
 	 */
 	private void writeFrameToSocket() {
-
 		// Initialize data
 		byte[] imageData = VisionInfoData.getFrameAsByteArray();
 
 		// Check if data is empty
 		if (imageData != null && imageData.length != 0) {
-
 			try {
 				// Initialize data streams
 				OutputStream out = m_client.getOutputStream();
@@ -44,12 +40,10 @@ public class VideoSocketClient extends AbstractVisionClient {
 				//Log.i(k_tag, m_client.getRemoteSocketAddress().toString());
 
 				try {
-
 					dos.writeInt(imageData.length);
 					dos.write(imageData, 0, imageData.length);
 
 				} catch (IOException e) {
-
 					Log.e(k_tag, "Error writing to socket stream! Closing socket...");
 					e.printStackTrace();
 
@@ -57,7 +51,6 @@ public class VideoSocketClient extends AbstractVisionClient {
 				}
 
 			} catch (IOException e) {
-
 				Log.e(k_tag, "Cannot get output stream of socket with address: " + m_hostName + " using port: " + Integer.toString(m_port) + "! Closing socket...");
 				e.printStackTrace();
 
@@ -68,15 +61,10 @@ public class VideoSocketClient extends AbstractVisionClient {
 
 	@Override
 	public void afterUpdate() {
-
 		switch (m_threadState) {
-
 			case RUNNING: {
-
 				switch (m_socketState) {
-
 					case OPEN: {
-
 						writeFrameToSocket();
 						break;
 					}

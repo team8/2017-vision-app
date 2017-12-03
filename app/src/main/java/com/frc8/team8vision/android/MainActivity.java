@@ -11,10 +11,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import com.frc8.team8vision.networking.data_transfer.VideoDataTransferModeSelector;
+import com.frc8.team8vision.networking.data_transfer.VisionDataTransferModeSelector;
 import com.frc8.team8vision.util.Constants;
 import com.frc8.team8vision.R;
 import com.frc8.team8vision.util.VisionPreferences;
-import com.frc8.team8vision.vision.DataTransferModeSelector;
+import com.frc8.team8vision.networking.data_transfer.DataTransferModeSelector;
 import com.frc8.team8vision.vision.VisionInfoData;
 import com.frc8.team8vision.vision.VisionProcessorBase;
 import com.frc8.team8vision.vision.ProcessorSelector;
@@ -48,8 +50,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private static long cycleTime = 1000;
 
 	private ProcessorSelector visionProcessor;
-	private DataTransferModeSelector.VisionDataTransferModeSelector visionDataTransferModeSelector;
-	private DataTransferModeSelector.VideoDataTransferModeSelector videoTransferModeSelector;
+	private VisionDataTransferModeSelector visionDataTransferModeSelector;
+	private VideoDataTransferModeSelector videoTransferModeSelector;
 
 	private static SketchyCameraView mCameraView;
 	private boolean isSettingsPaused = false;
@@ -68,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 		@Override
 		public void onManagerConnected(int status) {
-
 			onAllLoaded();
 
 			Mat intrinsicMatrix = null;
@@ -76,7 +77,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 			switch (status) {
 				case LoaderCallbackInterface.SUCCESS: {
-
 					opencvLoaded = true;
 
 					VisionPreferences.updateSettings();
@@ -124,7 +124,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-
 		super.onCreate(savedInstanceState);
 
 		// Load the OpenCV library
@@ -132,7 +131,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 	}
 
 	private void onAllLoaded() {
-
 		mCameraView = new SketchyCameraView(this, -1);
 		setContentView(mCameraView);
 		mCameraView.setCvCameraViewListener(this);
@@ -141,10 +139,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 		visionProcessor = new ProcessorSelector();
 		visionProcessor.setProcessor(ProcessorType.CENTROID);
 
-		visionDataTransferModeSelector = new DataTransferModeSelector.VisionDataTransferModeSelector(this, false);
+		visionDataTransferModeSelector = new VisionDataTransferModeSelector(this,
+				"VisionDataTransfer", "data.json", Constants.kVisionDataPort, false);
 		visionDataTransferModeSelector.setTransfererMode(DataTransferModeSelector.DataTransferMode.CAT_JSON);
 
-		videoTransferModeSelector = new DataTransferModeSelector.VideoDataTransferModeSelector(this, false);
+		videoTransferModeSelector = new VideoDataTransferModeSelector(this,
+				"VideoDataTransfer", "frame.json", Constants.kVideoPort, false);
 		videoTransferModeSelector.setTransfererMode(DataTransferModeSelector.DataTransferMode.SOCKET);
 
 		VisionPreferences.initialize(this);
@@ -152,7 +152,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onPause() {
-
 		visionDataTransferModeSelector.getTransferer().pause();
 		videoTransferModeSelector.getTransferer().pause();
 
@@ -164,7 +163,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onResume() {
-
 		super.onResume();
 		isSettingsPaused = false;
 
@@ -182,7 +180,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onDestroy() {
-
 		super.onDestroy();
 
 		visionDataTransferModeSelector.stopAll();
@@ -195,7 +192,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 	@Override
 	public void onCameraViewStarted(int width, int height) {
-
 		mWidth = width;
 		mHeight = height;
 

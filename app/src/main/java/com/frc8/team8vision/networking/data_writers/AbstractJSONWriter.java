@@ -1,4 +1,4 @@
-package com.frc8.team8vision.networking;
+package com.frc8.team8vision.networking.data_writers;
 
 import android.content.Context;
 import android.util.Log;
@@ -22,9 +22,7 @@ public abstract class AbstractJSONWriter extends AbstractVisionThread {
     protected final String k_fileName;
 
     public AbstractJSONWriter(final String k_threadName, final String k_fileName) {
-
         super(k_threadName);
-
         this.k_fileName = k_fileName;
     }
 
@@ -34,16 +32,12 @@ public abstract class AbstractJSONWriter extends AbstractVisionThread {
      * @param json JSONObject storing vision data.
      */
     protected void writeJSONToFile(JSONObject json) {
-
         try {
-
             OutputStreamWriter osw = new OutputStreamWriter(m_activity.openFileOutput("data.json", Context.MODE_PRIVATE));
             osw.write(json.toString());
             osw.flush();
             osw.close();
-
         } catch (IOException e) {
-
             Log.e(k_tag, "Could not write data in JSON form: " + e.toString());
         }
     }
@@ -54,16 +48,12 @@ public abstract class AbstractJSONWriter extends AbstractVisionThread {
      * @param state The state to write
      */
     protected void writeOnlyStateToJSONFile(String state) {
-
         Log.i(Constants.kTAG, "Writing default values for JSON with state " + state + "...");
 
         JSONObject json = new JSONObject();
-
         try {
             json.put("state", state);
-
             writeJSONToFile(json);
-
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -78,9 +68,7 @@ public abstract class AbstractJSONWriter extends AbstractVisionThread {
 
     @Override
     protected void update() {
-
         switch (m_threadState) {
-
             case RUNNING: {
                 writeJSONToFile(getJSON());
                 break;

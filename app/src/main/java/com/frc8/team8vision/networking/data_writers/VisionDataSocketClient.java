@@ -1,4 +1,4 @@
-package com.frc8.team8vision.networking;
+package com.frc8.team8vision.networking.data_writers;
 
 import com.frc8.team8vision.vision.VisionInfoData;
 
@@ -13,22 +13,17 @@ import java.io.OutputStreamWriter;
  */
 public class VisionDataSocketClient extends AbstractVisionClient {
 
-    public VisionDataSocketClient() {
-
-        super("VisionDataSocketClient");
+    public VisionDataSocketClient(String threadName) {
+        super(threadName);
     }
 
     @Override protected void afterInit() {}
 
     @Override
     protected void afterUpdate() {
-
         switch (m_threadState) {
-
             case RUNNING: {
-
                 switch (m_socketState) {
-
                     case OPEN: {
                         writeVisionDataToSocket();
                         break;
@@ -42,23 +37,18 @@ public class VisionDataSocketClient extends AbstractVisionClient {
      * Writes the vision data (x and y distances) to the socket using an output stream.
      */
     private void writeVisionDataToSocket() {
-
         try {
-
             OutputStream out = m_client.getOutputStream();
             OutputStreamWriter writer = new OutputStreamWriter(out);
 
             JSONObject jsonObject = VisionInfoData.getJsonRepresentation();
 
             if (jsonObject != null) {
-
                 String json = jsonObject.toString();
-
                 writer.write(json);
             }
 
         } catch (IOException e) {
-
             e.printStackTrace();
         }
     }

@@ -1,4 +1,4 @@
-package com.frc8.team8vision.networking;
+package com.frc8.team8vision.networking.data_writers;
 
 import android.app.Activity;
 import android.util.Log;
